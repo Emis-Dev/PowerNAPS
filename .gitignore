@@ -1,5 +1,6 @@
-# Compiled executable (generated from .ahk)
-*.exe
+# Keep NAOLEDP.exe for distribution
+# Other executables are ignored
+src/*.exe
 
 # Build artifacts
 build/
