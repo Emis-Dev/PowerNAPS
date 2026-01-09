@@ -495,6 +495,45 @@ WM_QUERYENDSESSION(*) {
 ; Alt + Shift + P: Full hardware standby (for nightly Pixel Refresh)
 !+p::SendMessage(0x0112, 0xF170, 2,, "Program Manager")
 
+; Escape: Emergency exit from blackscreen (always works)
+~Escape::DeactivateBlackScreen()
+
+; Any key press wakes (only when blackscreen active and keyboard wake enabled)
+~*a::OnAnyKey()
+~*b::OnAnyKey()
+~*c::OnAnyKey()
+~*d::OnAnyKey()
+~*e::OnAnyKey()
+~*f::OnAnyKey()
+~*g::OnAnyKey()
+~*h::OnAnyKey()
+~*i::OnAnyKey()
+~*j::OnAnyKey()
+~*k::OnAnyKey()
+~*l::OnAnyKey()
+~*m::OnAnyKey()
+~*n::OnAnyKey()
+~*o::OnAnyKey()
+~*q::OnAnyKey()
+~*r::OnAnyKey()
+~*s::OnAnyKey()
+~*t::OnAnyKey()
+~*u::OnAnyKey()
+~*v::OnAnyKey()
+~*w::OnAnyKey()
+~*x::OnAnyKey()
+~*y::OnAnyKey()
+~*z::OnAnyKey()
+~*Space::OnAnyKey()
+~*Enter::OnAnyKey()
+~*Tab::OnAnyKey()
+
+OnAnyKey() {
+    global BlackScreen, KeyboardEnabled
+    if KeyboardEnabled && WinExist("ahk_id " BlackScreen.Hwnd)
+        DeactivateBlackScreen()
+}
+
 ; Ctrl + Alt + WheelUp: Increase brightness (decrease dim level)
 ^!WheelUp::AdjustDimLevel(-25)
 
