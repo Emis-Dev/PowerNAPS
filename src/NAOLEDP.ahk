@@ -42,17 +42,8 @@ KeyboardEnabled := IniRead(SettingsFile, "Settings", "KeyboardEnabled", 1)
 ; SYSTEM TRAY SETUP
 ; ═══════════════════════════════════════════════════════════════════════════════
 A_IconTip := "NAOLEDP - OLED Protection Active"
-; Try to load icon from multiple locations
-IconPaths := [
-    A_AppData . "\NAOLEDP\assets\naoledp-icon.ico",  ; Installed location
-    A_ScriptDir . "\assets\naoledp-icon.ico"          ; Dev/source location
-]
-for IconPath in IconPaths {
-    if FileExist(IconPath) {
-        try TraySetIcon(IconPath, , true)
-        break
-    }
-}
+; Custom icon disabled - using default for now
+; TODO: Add proper ICO file
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
@@ -81,7 +72,12 @@ A_TrayMenu.Add()  ; Separator
 A_TrayMenu.Add("🌙 Blackout Now (Alt+P)", (*) => ActivateBlackScreen())
 A_TrayMenu.Add("💤 Hardware Standby (Alt+Shift+P)", (*) => SendMessage(0x0112, 0xF170, 2,, "Program Manager"))
 A_TrayMenu.Add()  ; Separator
-A_TrayMenu.Add("❌ Exit", (*) => ExitApp())
+
+; Exit submenu
+ExitMenu := Menu()
+ExitMenu.Add("Exit", (*) => ExitApp())
+ExitMenu.Add("Exit + Disable Watchdog", (*) => ExitWithWatchdog())
+A_TrayMenu.Add("❌ Exit", ExitMenu)
 
 ; ═══════════════════════════════════════════════════════════════════════════════
 ; MENU HANDLER FUNCTIONS
@@ -134,6 +130,13 @@ UpdateTriggerChecks() {
         TriggersMenu.Uncheck("Keyboard wakes screen")
 }
 
+ExitWithWatchdog() {
+    ; Disable the watchdog task then exit
+    Run('powershell -WindowStyle Hidden -Command "Disable-ScheduledTask -TaskName NAOLEDP-Watchdog -ErrorAction SilentlyContinue"',, "Hide")
+    Sleep(500)
+    ExitApp()
+}
+
 ; ═══════════════════════════════════════════════════════════════════════════════
 ; GUI SETUP - Full Black Screen Overlay
 ; ═══════════════════════════════════════════════════════════════════════════════
@@ -143,8 +146,8 @@ BlackScreen.BackColor := "000000"
 ; ═══════════════════════════════════════════════════════════════════════════════
 ; INPUT MONITORING
 ; ═══════════════════════════════════════════════════════════════════════════════
-KeyHook := InputHook("V L0") 
-KeyHook.OnKeyDown := ((*) => (KeyboardEnabled ? DeactivateBlackScreen() : 0))
+; Keyboard detection uses A_TimeIdlePhysical via timer (more reliable than InputHook with fullscreen GUI)
+LastIdleTime := A_TimeIdlePhysical
 
 SetTimer(CheckStatus, 5000)
 
@@ -187,24 +190,41 @@ MouseMoveCheck() {
 SetTimer(MouseMoveCheck, 500)
 
 ; ═══════════════════════════════════════════════════════════════════════════════
+; KEYBOARD ACTIVITY DETECTION (uses idle time reset)
+; ═══════════════════════════════════════════════════════════════════════════════
+KeyboardCheck() {
+    global BlackScreen, KeyboardEnabled, LastIdleTime
+    if !WinExist("ahk_id " BlackScreen.Hwnd)
+        return
+    if !KeyboardEnabled
+        return
+    ; If idle time decreased significantly, user pressed a key
+    CurrentIdle := A_TimeIdlePhysical
+    if (CurrentIdle < LastIdleTime - 100) {
+        DeactivateBlackScreen()
+    }
+    LastIdleTime := CurrentIdle
+}
+SetTimer(KeyboardCheck, 200)
+
+; ═══════════════════════════════════════════════════════════════════════════════
 ; BLACKSCREEN FUNCTIONS
 ; ═══════════════════════════════════════════════════════════════════════════════
 ActivateBlackScreen() {
-    global BlackScreen, KeyHook
+    global BlackScreen, LastIdleTime
     if !WinExist("ahk_id " BlackScreen.Hwnd) {
         BlackScreen.Show("x0 y0 w" . A_ScreenWidth . " h" . A_ScreenHeight)
         DllCall("ShowCursor", "Int", 0)  ; Hide cursor completely
-        KeyHook.Start()
+        LastIdleTime := A_TimeIdlePhysical  ; Reset tracking
         ToolTip()
     }
 }
 
 DeactivateBlackScreen() {
-    global BlackScreen, KeyHook
+    global BlackScreen
     if WinExist("ahk_id " BlackScreen.Hwnd) {
         DllCall("ShowCursor", "Int", 1)  ; Restore cursor
         BlackScreen.Hide()
-        KeyHook.Stop()
         ToolTip()
     }
 }
