@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.4                                 ║
+; ║                              PowerNAPS v2.5                                 ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -69,8 +69,8 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("PowerNAPS v2.4", (*) => 0)
-A_TrayMenu.Disable("PowerNAPS v2.4")
+A_TrayMenu.Add("PowerNAPS v2.5", (*) => 0)
+A_TrayMenu.Disable("PowerNAPS v2.5")
 A_TrayMenu.Add()  ; Separator
 
 ; Timer submenu
@@ -543,7 +543,16 @@ SetTimer(MicCheck, 500)
 ; BLACKSCREEN FUNCTIONS
 ; ═══════════════════════════════════════════════════════════════════════════════
 ActivateBlackScreen() {
-    global BlackScreen, LastIdleTime, DimLevel
+    global BlackScreen, LastIdleTime, DimLevel, RemoteControlMode
+    
+    ; If in remote session and remote mode enabled, use hardware monitor off
+    ; This lets you work remotely while OLED stays physically off
+    if (RemoteControlMode && IsRemoteSession()) {
+        ; Turn off physical monitor but keep session active
+        SendMessage(0x0112, 0xF170, 2,, "Program Manager")  ; SC_MONITORPOWER = off
+        return
+    }
+    
     if !WinExist("ahk_id " BlackScreen.Hwnd) {
         BlackScreen.Show("x0 y0 w" . A_ScreenWidth . " h" . A_ScreenHeight)
         ; Apply dim level with error handling
