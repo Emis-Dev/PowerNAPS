@@ -1,6 +1,6 @@
-# PowerNAPS
+# Power-NAPS
 
-**Power NAP Screen** — The smart screen saver that protects your OLED without killing your music.
+**Not Another Protector of Screens** — Quick naps for your display. Instant wake. Maximum longevity.
 
 <p align="center">
   <img src="assets/powernaps-banner.png" alt="PowerNAPS Banner" width="600">
@@ -8,121 +8,140 @@
 
 ---
 
-## 🇬🇧 English
+## Why Power-NAPS?
 
-### The Problem
+Your screen is always on, slowly aging. Windows power management is unreliable — Chrome tabs, music apps, and background processes keep your display awake even when you're not there.
 
-You have a premium OLED monitor and a high-end audio setup (like Sonos Beam via HDMI eARC). You want your screen to turn off when idle to prevent burn-in. But here's the frustrating reality:
+**Power-NAPS** gives your screen quick power naps:
+- **⚡ Instant wake** — Unlike Windows screen-off (which takes seconds to reconnect), Power-NAPS wakes instantly
+- **💰 Lower electricity bills** — Black pixels = zero power on OLED; reduced backlight on LCD
+- **🖥️ Extended screen lifespan** — Less burn-in risk on OLED, less backlight wear on LCD
+- **🔌 No hardware interruption** — USB devices, HDMI-ARC audio, and peripherals stay connected
 
-- **Windows power management is unreliable.** Chrome tabs, music apps, and background processes send "wake requests" that prevent the display from sleeping.
-- **Hardware standby breaks audio.** When your monitor goes into true standby mode, the HDMI/eARC handshake is lost, and your music stops.
-- **You're forced to choose:** Either protect your screen and lose audio, or keep your music playing and risk burn-in.
+### The Power Nap Philosophy
 
-### The Solution
+Just like a quick power nap refreshes you without the grogginess of deep sleep, Power-NAPS puts your screen into a light "nap" state:
+- **Quick energy recharge** — Screen rests, pixels off
+- **Instantly back on your feet** — No HDMI handshake delays, no reconnection lag  
+- **All for longevity** — Your screen (and electricity bill) will thank you
 
-**PowerNAPS** creates an "Audio-Safe Blackout" — a 100% black fullscreen overlay that turns off all pixels (OLED-safe) while keeping the HDMI connection alive. Your Sonos keeps playing. Your screen stays protected.
+---
 
-### Features
+## The Story
+
+I bought a new OLED monitor. Having experienced burn-in on a TV before, I was very wary.
+
+**What I quickly discovered:**
+- ❌ Windows power settings are unreliable — Chrome, Spotify, and background apps send wake requests
+- ❌ When Windows *does* turn off the screen, my HDMI-ARC audio (Sonos) disconnects
+- ❌ Hiding the taskbar and rotating wallpapers doesn't actually prevent burn-in — it just avoids *visible* patterns while still accelerating overall panel wear
+- ❌ My monitor had no built-in protection against accidentally staying on for days
+
+**I searched for third-party solutions.** Every app I found had shortcomings:
+- Some killed my audio connection
+- Some could be accidentally closed
+- Some didn't detect *physical* input, just any software activity
+- None had proper resilience
+
+**So I built Power-NAPS.** You can't even close it by accident — the watchdog brings it right back.
+
+---
+
+## 🇬🇧 Features
 
 | Feature | Description |
 |---------|-------------|
-| 🖥️ **Configurable Timer** | Choose 5, 10, 15, 30, or 60 minutes of inactivity before blackout |
-| 🎵 **Audio-Safe Blackout** | Black overlay instead of hardware standby — HDMI/eARC stays connected |
-| 🖱️ **Wake Triggers** | Toggle mouse and/or keyboard wake independently |
-| 🎤 **Microphone Wake** | Optional wake-on-voice detection |
-| ⌨️ **Hotkeys** | `Alt+P` for instant blackout, `Alt+Shift+P` for hardware standby |
-| 🔄 **Watchdog Protection** | Task Scheduler ensures PowerNAPS restarts after crashes or partial shutdowns |
-| 🛡️ **System Tray Control** | Right-click for settings, timer, watchdog toggle, and more |
-| ⚡ **Instant Recovery** | No HDMI re-handshake needed — wake up is instant |
-
-### Installation
-
-1. Download `PowerNAPS-v2.2.zip` from [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
-2. Extract the ZIP file
-3. Double-click **`Install.exe`**
-4. Done! PowerNAPS is now protecting your screen.
+| 🖥️ **Works on Any Screen** | OLED, LCD, gaming monitors — all benefit from reduced on-time |
+| ⚡ **Instant Wake** | No Windows reconnection delay — wake up in milliseconds |
+| 💰 **Saves Electricity** | OLED: black = off. LCD: reduced backlight aging |
+| 🔌 **Hardware Stays Connected** | USB hubs, HDMI-ARC speakers, webcams — nothing disconnects |
+| ⏱️ **Configurable Timer** | 5, 10, 15, 30, or 60 minutes of inactivity |
+| 🎯 **Smart Wake Triggers** | Mouse, keyboard, gamepad, microphone, or schedule |
+| 🖥️ **Remote Control Mode** | NEW: Stay dark during RDP/TeamViewer sessions |
+| 🔄 **Auto-Start Watchdog** | Always running, even after crashes |
 
 ### Hotkeys
 
 | Hotkey | Action |
 |--------|--------|
-| `Alt + P` | Instant audio-safe blackout (music keeps playing) |
-| `Alt + Shift + P` | True hardware standby (use for nightly Pixel Refresh) |
-| `Any key / Mouse move` | Wake up from blackout |
+| `Alt + P` | Instant nap (screen goes dark, everything stays connected) |
+| `Alt + Shift + P` | Deep sleep (hardware standby for OLED Pixel Refresh) |
+| `Escape` | Wake up immediately |
+| `Ctrl + Alt + Scroll` | Adjust darkness level on-the-fly |
 
-### Uninstallation
+---
 
-Double-click **`Uninstall.exe`** (included in the ZIP)
+## Installation
+
+1. Download `PowerNAPS-v2.4.zip` from [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
+2. Extract and double-click **`Install.exe`**
+3. Done! Power-NAPS protects your screen.
+
+Right-click the tray icon to configure timer, wake triggers, and more.
 
 ---
 
 ## 🇳🇱 Nederlands
 
-### Het Probleem
+### Waarom Power-NAPS?
 
-Je hebt een premium OLED-monitor en een high-end audio-setup (zoals Sonos Beam via HDMI eARC). Je wilt dat je scherm uitschakelt bij inactiviteit om inbranden te voorkomen. Maar de frustrerende realiteit is:
+Je scherm staat altijd aan en veroudert langzaam. Windows energiebeheer is onbetrouwbaar — Chrome tabs, muziek-apps en achtergrondprocessen houden je scherm wakker, zelfs als je er niet bent.
 
-- **Windows energiebeheer is onbetrouwbaar.** Chrome-tabbladen, muziek-apps en achtergrondprocessen sturen "wake requests" die voorkomen dat het scherm in slaapstand gaat.
-- **Hardware standby verbreekt audio.** Wanneer je monitor in echte standby gaat, wordt de HDMI/eARC-handshake verbroken en stopt je muziek.
-- **Je moet kiezen:** Of je beschermt je scherm en verliest audio, of je muziek blijft spelen met risico op inbranden.
-
-### De Oplossing
-
-**PowerNAPS** creëert een "Audio-Safe Blackout" — een 100% zwart fullscreen overlay die alle pixels uitschakelt (OLED-safe) terwijl de HDMI-verbinding actief blijft. Je Sonos blijft spelen. Je scherm blijft beschermd.
+**Power-NAPS** geeft je scherm snelle power naps:
+- **⚡ Direct wakker** — Anders dan Windows scherm-uit (wat seconden duurt om opnieuw te verbinden), wordt Power-NAPS direct wakker
+- **💰 Lagere elektriciteitsrekening** — Zwarte pixels = geen stroom op OLED; verminderde achtergrondverlichting op LCD
+- **🖥️ Langere levensduur scherm** — Minder inbrandrisico op OLED, minder slijtage achtergrondverlichting op LCD
+- **🔌 Geen hardware onderbreking** — USB apparaten, HDMI-ARC audio en randapparatuur blijven verbonden
 
 ### Kenmerken
 
 | Kenmerk | Beschrijving |
 |---------|--------------|
-| 🖥️ **Configureerbare Timer** | Kies 5, 10, 15, 30 of 60 minuten inactiviteit voor blackout |
-| 🎵 **Audio-Safe Blackout** | Projecteert een zwarte overlay i.p.v. hardware standby — HDMI/eARC blijft verbonden |
-| 🖱️ **Wake Triggers** | Schakel muis en/of toetsenbord wake apart in/uit |
-| 🎤 **Microfoon Wake** | Optionele wake-on-voice detectie |
-| ⌨️ **Sneltoetsen** | `Alt+P` voor directe blackout, `Alt+Shift+P` voor hardware standby |
-| 🔄 **Watchdog Bescherming** | Taakplanner zorgt dat PowerNAPS herstart na crashes |
-| 🛡️ **Systeemvak Bediening** | Rechtsklik voor instellingen, timer, watchdog toggle en meer |
-| ⚡ **Snelle Recovery** | Geen HDMI re-handshake nodig — direct wakker |
-
-### Installatie
-
-1. Download de laatste `PowerNAPS.zip` van [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
-2. Pak het ZIP-bestand uit
-3. Dubbelklik op **`Install.exe`**
-4. Klaar! PowerNAPS beschermt nu je scherm.
+| 🖥️ **Werkt op Elk Scherm** | OLED, LCD, gaming monitoren — allemaal profiteren van minder aan-tijd |
+| ⚡ **Direct Wakker** | Geen Windows reconnectie vertraging — in milliseconden wakker |
+| 💰 **Bespaart Elektriciteit** | OLED: zwart = uit. LCD: verminderde slijtage achtergrondverlichting |
+| 🔌 **Hardware Blijft Verbonden** | USB hubs, HDMI-ARC speakers, webcams — niets wordt losgekoppeld |
+| ⏱️ **Instelbare Timer** | 5, 10, 15, 30 of 60 minuten inactiviteit |
+| 🎯 **Slimme Wake Triggers** | Muis, toetsenbord, gamepad, microfoon of schema |
+| 🖥️ **Remote Control Modus** | NIEUW: Blijf donker tijdens RDP/TeamViewer sessies |
+| 🔄 **Auto-Start Watchdog** | Altijd draaiend, zelfs na crashes |
 
 ### Sneltoetsen
 
 | Sneltoets | Actie |
 |-----------|-------|
-| `Alt + P` | Directe audio-safe blackout (muziek blijft spelen) |
-| `Alt + Shift + P` | Echte hardware standby (gebruik voor nachtelijke Pixel Refresh) |
-| `Elke toets / Muisbeweging` | Wakker worden uit blackout |
+| `Alt + P` | Directe nap (scherm gaat donker, alles blijft verbonden) |
+| `Alt + Shift + P` | Diepe slaap (hardware standby voor OLED Pixel Refresh) |
+| `Escape` | Direct wakker worden |
+| `Ctrl + Alt + Scroll` | Donkerheid aanpassen |
 
-### Deïnstallatie
+### Installatie
 
-Dubbelklik op **`Uninstall.exe`** (zit in de ZIP)
+1. Download `PowerNAPS-v2.4.zip` van [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
+2. Uitpakken en dubbelklik op **`Install.exe`**
+3. Klaar! Power-NAPS beschermt je scherm.
 
 ---
 
 ## Technical Details
 
-PowerNAPS is built with AutoHotkey v2 and compiled to a standalone executable. No dependencies required.
+Power-NAPS is built with AutoHotkey v2 — a single portable executable with no dependencies.
 
 ### How It Works
 
-1. **Physical Idle Detection**: Uses `A_TimeIdlePhysical` to detect actual user input, bypassing software wake requests from Chrome, Qobuz, etc.
+1. **Physical Idle Detection** — Uses `A_TimeIdlePhysical` to detect real user input, ignoring software wake requests
+2. **Black Overlay** — Instead of hardware standby, creates a fullscreen black window (OLED pixels = off)
+3. **Remote Session Detection** — Automatically detects RDP/TeamViewer and ignores remote input
+4. **Instant Recovery** — No HDMI re-handshake needed, wake is instant
 
-2. **Black Overlay**: Instead of sending a hardware standby signal (`SendMessage 0xF170`), PowerNAPS creates a fullscreen black GUI window. On OLED panels, black = pixels off = zero burn-in risk.
+### Why Not Just Use Windows Screen Saver?
 
-3. **Cursor Hiding**: Uses `DllCall("ShowCursor", "Int", 0)` to completely hide the mouse pointer, eliminating any static element that could burn in.
-
-4. **Watchdog**: A Windows Task Scheduler task monitors PowerNAPS and restarts it if terminated unexpectedly.
-
-### System Requirements
-
-- Windows 10/11
-- Any OLED monitor (tested with Alienware QD-OLED)
-- Optional: HDMI eARC audio setup (Sonos, etc.)
+| | Windows Screen Off | Power-NAPS |
+|-|-------------------|------------|
+| Wake time | 2-5 seconds | **Instant** |
+| USB devices | Disconnect/reconnect | **Stay connected** |
+| HDMI-ARC audio | Handshake breaks | **Keeps playing** |
+| Reliable trigger | No (software can prevent) | **Yes (physical only)** |
 
 ---
 
@@ -130,12 +149,10 @@ PowerNAPS is built with AutoHotkey v2 and compiled to a standalone executable. N
 
 MIT License — See [LICENSE](LICENSE) for details.
 
-## Disclaimer
-
-PowerNAPS is provided "as is" without warranty. While it's designed to help protect OLED panels, the authors are not responsible for any screen damage. OLED burn-in is influenced by many factors including usage patterns, panel quality, and manufacturer settings. Always enable your monitor's built-in Pixel Refresh features as an additional layer of protection.
-
 ---
 
 <p align="center">
-  Made with ❤️ for OLED enthusiasts who refuse to compromise on audio.
+  <strong>Power-NAPS</strong> — Not Another Protector of Screens<br>
+  Quick naps. Instant wake. Maximum longevity.<br><br>
+  Made with ❤️ for everyone who wants their screen to last longer.
 </p>

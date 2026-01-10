@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.3                                 ║
+; ║                              PowerNAPS v2.4                                 ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -54,6 +54,7 @@ ScheduleEnd := IniRead(SettingsFile, "Settings", "ScheduleEnd", "17:00")
 SoundEnabled := IniRead(SettingsFile, "Settings", "SoundEnabled", 0)
 MicEnabled := IniRead(SettingsFile, "Settings", "MicEnabled", 0)
 DimLevel := IniRead(SettingsFile, "Settings", "DimLevel", 255)  ; 0=transparent, 255=fully black
+RemoteControlMode := IniRead(SettingsFile, "Settings", "RemoteControlMode", 1)  ; Auto-detect remote by default
 
 ; ═══════════════════════════════════════════════════════════════════════════════
 ; SYSTEM TRAY SETUP
@@ -68,8 +69,8 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("PowerNAPS v2.3", (*) => 0)
-A_TrayMenu.Disable("PowerNAPS v2.3")
+A_TrayMenu.Add("PowerNAPS v2.4", (*) => 0)
+A_TrayMenu.Disable("PowerNAPS v2.4")
 A_TrayMenu.Add()  ; Separator
 
 ; Timer submenu
@@ -89,6 +90,8 @@ TriggersMenu.Add("Keyboard wakes screen", ToggleKeyboard)
 TriggersMenu.Add("Gamepad wakes screen", ToggleGamepad)
 TriggersMenu.Add("Audio output wakes screen", ToggleSound)
 TriggersMenu.Add("Microphone wakes screen", ToggleMic)
+TriggersMenu.Add()  ; Separator
+TriggersMenu.Add("🖥️ Remote control: stay dark", ToggleRemoteMode)
 TriggersMenu.Add()  ; Separator
 
 ; Schedule submenu
@@ -236,8 +239,27 @@ ToggleMic(*) {
     SetTimer(() => ToolTip(), -2000)
 }
 
+ToggleRemoteMode(*) {
+    global RemoteControlMode, SettingsFile
+    RemoteControlMode := !RemoteControlMode
+    IniWrite(RemoteControlMode, SettingsFile, "Settings", "RemoteControlMode")
+    UpdateTriggerChecks()
+    if RemoteControlMode
+        ToolTip("Remote control mode: ON (stays dark during remote session)", 10, 10)
+    else
+        ToolTip("Remote control mode: OFF (wake triggers normal)", 10, 10)
+    SetTimer(() => ToolTip(), -2000)
+}
+
+; Helper: Detect if we're in a remote session (RDP, TeamViewer, etc.)
+IsRemoteSession() {
+    ; Check Windows Terminal Services session
+    ; SM_REMOTESESSION = 0x1000 (4096)
+    return DllCall("GetSystemMetrics", "Int", 0x1000, "Int")
+}
+
 UpdateTriggerChecks() {
-    global TriggersMenu, MouseEnabled, KeyboardEnabled, GamepadEnabled, ScheduleEnabled, SoundEnabled, MicEnabled
+    global TriggersMenu, MouseEnabled, KeyboardEnabled, GamepadEnabled, ScheduleEnabled, SoundEnabled, MicEnabled, RemoteControlMode
     if MouseEnabled
         TriggersMenu.Check("Mouse wakes screen")
     else
@@ -258,6 +280,10 @@ UpdateTriggerChecks() {
         TriggersMenu.Check("Microphone wakes screen")
     else
         TriggersMenu.Uncheck("Microphone wakes screen")
+    if RemoteControlMode
+        TriggersMenu.Check("🖥️ Remote control: stay dark")
+    else
+        TriggersMenu.Uncheck("🖥️ Remote control: stay dark")
     ; Update schedule submenu
     if ScheduleEnabled
         ScheduleMenu.Check("❤️ Enable (default)")
@@ -352,11 +378,14 @@ IsWithinSchedule(startTime, endTime) {
 ; MOUSE MOVEMENT DETECTION
 ; ═══════════════════════════════════════════════════════════════════════════════
 MouseMoveCheck() {
-    global BlackScreen, MouseEnabled
+    global BlackScreen, MouseEnabled, RemoteControlMode
     static LastX := 0, LastY := 0
     if !WinExist("ahk_id " BlackScreen.Hwnd)
         return
     if !MouseEnabled
+        return
+    ; Skip if in remote session and remote mode is enabled
+    if (RemoteControlMode && IsRemoteSession())
         return
     MouseGetPos(&CurrentX, &CurrentY)
     if (Abs(CurrentX - LastX) > 10 || Abs(CurrentY - LastY) > 10) {
@@ -370,10 +399,13 @@ SetTimer(MouseMoveCheck, 500)
 ; KEYBOARD ACTIVITY DETECTION (uses idle time reset)
 ; ═══════════════════════════════════════════════════════════════════════════════
 KeyboardCheck() {
-    global BlackScreen, KeyboardEnabled, LastIdleTime
+    global BlackScreen, KeyboardEnabled, LastIdleTime, RemoteControlMode
     if !WinExist("ahk_id " BlackScreen.Hwnd)
         return
     if !KeyboardEnabled
+        return
+    ; Skip if in remote session and remote mode is enabled
+    if (RemoteControlMode && IsRemoteSession())
         return
     ; If idle time decreased significantly, user pressed a key
     CurrentIdle := A_TimeIdlePhysical
@@ -589,7 +621,10 @@ WM_QUERYENDSESSION(*) {
 ~*Tab::OnAnyKey()
 
 OnAnyKey() {
-    global BlackScreen, KeyboardEnabled
+    global BlackScreen, KeyboardEnabled, RemoteControlMode
+    ; Skip if in remote session and remote mode is enabled
+    if (RemoteControlMode && IsRemoteSession())
+        return
     if KeyboardEnabled && WinExist("ahk_id " BlackScreen.Hwnd)
         DeactivateBlackScreen()
 }
