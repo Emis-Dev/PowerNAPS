@@ -1,5 +1,5 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                         NAOLEDP Installer Script                            ║
+# ║                        PowerNAPS Installer Script                            ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 # Self-elevate to Administrator if needed
@@ -14,13 +14,13 @@ $ErrorActionPreference = "Stop"
 try {
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Cyan
-    Write-Host "                    NAOLEDP Installer v2.0                            " -ForegroundColor Cyan
+    Write-Host "                    PowerNAPS Installer v2.2                          " -ForegroundColor Cyan
     Write-Host "          OLED Screen Protection with Audio-Safe Blackout             " -ForegroundColor Cyan
     Write-Host "======================================================================" -ForegroundColor Cyan
     Write-Host ""
 
     # Configuration
-    $InstallDir = "$env:USERPROFILE\NAOLEDP"
+    $InstallDir = "$env:USERPROFILE\PowerNAPS"
     $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
     # Step 1: Create installation directory
@@ -34,20 +34,20 @@ try {
     Write-Host "      Done: $InstallDir" -ForegroundColor Green
 
     # Step 2: Copy executable
-    Write-Host "[2/5] Copying NAOLEDP files..." -ForegroundColor Yellow
-    $ExePath = Join-Path (Split-Path $ScriptDir) "NAOLEDP.exe"
+    Write-Host "[2/5] Copying PowerNAPS files..." -ForegroundColor Yellow
+    $ExePath = Join-Path (Split-Path $ScriptDir) "PowerNAPS.exe"
     if (Test-Path $ExePath) {
         Copy-Item $ExePath -Destination $InstallDir -Force
-        Write-Host "      Done: NAOLEDP.exe copied" -ForegroundColor Green
+        Write-Host "      Done: PowerNAPS.exe copied" -ForegroundColor Green
     }
     else {
-        throw "NAOLEDP.exe not found at: $ExePath"
+        throw "PowerNAPS.exe not found at: $ExePath"
     }
 
     # Step 3: Copy icon (for tray) - goes to AppData where settings are stored
     Write-Host "[3/5] Copying assets..." -ForegroundColor Yellow
-    $IcoPath = Join-Path (Split-Path $ScriptDir) "assets\naoledp-icon.ico"
-    $AppDataAssets = "$env:APPDATA\NAOLEDP\assets"
+    $IcoPath = Join-Path (Split-Path $ScriptDir) "assets\powernaps-icon.ico"
+    $AppDataAssets = "$env:APPDATA\PowerNAPS\assets"
     if (!(Test-Path $AppDataAssets)) {
         New-Item -ItemType Directory -Path $AppDataAssets -Force | Out-Null
     }
@@ -61,27 +61,27 @@ try {
 
     # Step 4: Import Task Scheduler watchdog
     Write-Host "[4/5] Installing watchdog task..." -ForegroundColor Yellow
-    $XmlPath = Join-Path $ScriptDir "NAOLEDP-Watchdog.xml"
+    $XmlPath = Join-Path $ScriptDir "PowerNAPS-Watchdog.xml"
     if (Test-Path $XmlPath) {
         $XmlContent = Get-Content $XmlPath -Raw
         
-        $existingTask = Get-ScheduledTask -TaskName "NAOLEDP-Watchdog" -ErrorAction SilentlyContinue
+        $existingTask = Get-ScheduledTask -TaskName "PowerNAPS-Watchdog" -ErrorAction SilentlyContinue
         if ($existingTask) {
-            Unregister-ScheduledTask -TaskName "NAOLEDP-Watchdog" -Confirm:$false
+            Unregister-ScheduledTask -TaskName "PowerNAPS-Watchdog" -Confirm:$false
             Write-Host "      Removed existing task" -ForegroundColor Gray
         }
         
-        Register-ScheduledTask -TaskName "NAOLEDP-Watchdog" -Xml $XmlContent -Force | Out-Null
+        Register-ScheduledTask -TaskName "PowerNAPS-Watchdog" -Xml $XmlContent -Force | Out-Null
         Write-Host "      Done: Watchdog task installed" -ForegroundColor Green
     }
     else {
-        throw "NAOLEDP-Watchdog.xml not found at: $XmlPath"
+        throw "PowerNAPS-Watchdog.xml not found at: $XmlPath"
     }
 
-    # Step 5: Start NAOLEDP
-    Write-Host "[5/5] Starting NAOLEDP..." -ForegroundColor Yellow
-    Start-Process "$InstallDir\NAOLEDP.exe"
-    Write-Host "      Done: NAOLEDP is now running" -ForegroundColor Green
+    # Step 5: Start PowerNAPS
+    Write-Host "[5/5] Starting PowerNAPS..." -ForegroundColor Yellow
+    Start-Process "$InstallDir\PowerNAPS.exe"
+    Write-Host "      Done: PowerNAPS is now running" -ForegroundColor Green
 
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Green

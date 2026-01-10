@@ -1,29 +1,23 @@
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Date>2026-01-09T00:00:00</Date>
+    <Date>2026-01-10T00:00:00</Date>
     <Author>PowerNAPS</Author>
     <Description>Watchdog task that ensures PowerNAPS is always running. Starts at login and restarts if the process crashes or is terminated.</Description>
     <URI>\PowerNAPS-Watchdog</URI>
   </RegistrationInfo>
   <Triggers>
-    <!-- Start at user logon with delay to allow session to fully initialize -->
+    <!-- Start at user logon -->
     <LogonTrigger>
       <Enabled>true</Enabled>
-      <Delay>PT30S</Delay>
     </LogonTrigger>
-    <!-- Boot trigger as primary fallback - more reliable than logon for elevated tasks -->
-    <BootTrigger>
-      <Enabled>true</Enabled>
-      <Delay>PT60S</Delay>
-    </BootTrigger>
-    <!-- Also check every 5 minutes as a secondary fallback -->
+    <!-- Also check every 5 minutes as a fallback -->
     <TimeTrigger>
       <Repetition>
         <Interval>PT5M</Interval>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
-      <StartBoundary>2026-01-09T00:00:00</StartBoundary>
+      <StartBoundary>2026-01-10T00:00:00</StartBoundary>
       <Enabled>true</Enabled>
     </TimeTrigger>
   </Triggers>

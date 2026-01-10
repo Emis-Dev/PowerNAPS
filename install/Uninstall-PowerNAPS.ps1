@@ -1,5 +1,5 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║                        NAOLEDP Uninstaller Script                           ║
+# ║                       PowerNAPS Uninstaller Script                           ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
 #Requires -RunAsAdministrator
@@ -8,17 +8,17 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║                   NAOLEDP Uninstaller v1.0                       ║" -ForegroundColor Cyan
+Write-Host "║                  PowerNAPS Uninstaller v2.2                      ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
-$InstallDir = "$env:USERPROFILE\NAOLEDP"
+$InstallDir = "$env:USERPROFILE\PowerNAPS"
 
 # Step 1: Stop running process
-Write-Host "[1/3] Stopping NAOLEDP process..." -ForegroundColor Yellow
-$process = Get-Process -Name "NAOLEDP" -ErrorAction SilentlyContinue
+Write-Host "[1/3] Stopping PowerNAPS process..." -ForegroundColor Yellow
+$process = Get-Process -Name "PowerNAPS" -ErrorAction SilentlyContinue
 if ($process) {
-    Stop-Process -Name "NAOLEDP" -Force
+    Stop-Process -Name "PowerNAPS" -Force
     Write-Host "      ✓ Process stopped" -ForegroundColor Green
 }
 else {
@@ -27,9 +27,9 @@ else {
 
 # Step 2: Remove scheduled task
 Write-Host "[2/3] Removing watchdog task..." -ForegroundColor Yellow
-$task = Get-ScheduledTask -TaskName "NAOLEDP-Watchdog" -ErrorAction SilentlyContinue
+$task = Get-ScheduledTask -TaskName "PowerNAPS-Watchdog" -ErrorAction SilentlyContinue
 if ($task) {
-    Unregister-ScheduledTask -TaskName "NAOLEDP-Watchdog" -Confirm:$false
+    Unregister-ScheduledTask -TaskName "PowerNAPS-Watchdog" -Confirm:$false
     Write-Host "      ✓ Task removed" -ForegroundColor Green
 }
 else {
@@ -49,7 +49,7 @@ else {
 Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Green
 Write-Host "║                   Uninstallation Complete!                       ║" -ForegroundColor Green
-Write-Host "║           NAOLEDP has been completely removed.                   ║" -ForegroundColor Green
+Write-Host "║           PowerNAPS has been completely removed.                 ║" -ForegroundColor Green
 Write-Host "╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
 Write-Host "Press any key to exit..."

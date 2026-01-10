@@ -1,9 +1,9 @@
-# NAOLEDP
+# PowerNAPS
 
-**No Audio-gap OLED Protection** — The smart screen saver that protects your OLED without killing your music.
+**Power NAP Screen** — The smart screen saver that protects your OLED without killing your music.
 
 <p align="center">
-  <img src="assets/naoledp-banner.png" alt="NAOLEDP Banner" width="600">
+  <img src="assets/powernaps-banner.png" alt="PowerNAPS Banner" width="600">
 </p>
 
 ---
@@ -20,7 +20,7 @@ You have a premium OLED monitor and a high-end audio setup (like Sonos Beam via 
 
 ### The Solution
 
-**NAOLEDP** creates an "Audio-Safe Blackout" — a 100% black fullscreen overlay that turns off all pixels (OLED-safe) while keeping the HDMI connection alive. Your Sonos keeps playing. Your screen stays protected.
+**PowerNAPS** creates an "Audio-Safe Blackout" — a 100% black fullscreen overlay that turns off all pixels (OLED-safe) while keeping the HDMI connection alive. Your Sonos keeps playing. Your screen stays protected.
 
 ### Features
 
@@ -29,17 +29,18 @@ You have a premium OLED monitor and a high-end audio setup (like Sonos Beam via 
 | 🖥️ **Configurable Timer** | Choose 5, 10, 15, 30, or 60 minutes of inactivity before blackout |
 | 🎵 **Audio-Safe Blackout** | Black overlay instead of hardware standby — HDMI/eARC stays connected |
 | 🖱️ **Wake Triggers** | Toggle mouse and/or keyboard wake independently |
+| 🎤 **Microphone Wake** | Optional wake-on-voice detection |
 | ⌨️ **Hotkeys** | `Alt+P` for instant blackout, `Alt+Shift+P` for hardware standby |
-| 🔄 **Watchdog Protection** | Task Scheduler ensures NAOLEDP restarts after crashes or partial shutdowns |
+| 🔄 **Watchdog Protection** | Task Scheduler ensures PowerNAPS restarts after crashes or partial shutdowns |
 | 🛡️ **System Tray Control** | Right-click for settings, timer, watchdog toggle, and more |
 | ⚡ **Instant Recovery** | No HDMI re-handshake needed — wake up is instant |
 
 ### Installation
 
-1. Download `NAOLEDP-v2.2.zip` from [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
+1. Download `PowerNAPS-v2.2.zip` from [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
 2. Extract the ZIP file
 3. Double-click **`Install.exe`**
-4. Done! NAOLEDP is now protecting your screen.
+4. Done! PowerNAPS is now protecting your screen.
 
 ### Hotkeys
 
@@ -67,25 +68,27 @@ Je hebt een premium OLED-monitor en een high-end audio-setup (zoals Sonos Beam v
 
 ### De Oplossing
 
-**NAOLEDP** creëert een "Audio-Safe Blackout" — een 100% zwart fullscreen overlay die alle pixels uitschakelt (OLED-safe) terwijl de HDMI-verbinding actief blijft. Je Sonos blijft spelen. Je scherm blijft beschermd.
+**PowerNAPS** creëert een "Audio-Safe Blackout" — een 100% zwart fullscreen overlay die alle pixels uitschakelt (OLED-safe) terwijl de HDMI-verbinding actief blijft. Je Sonos blijft spelen. Je scherm blijft beschermd.
 
 ### Kenmerken
 
 | Kenmerk | Beschrijving |
 |---------|--------------|
-| 🖥️ **Fysieke Inactiviteitsmonitor** | Activeert na 15 minuten *daadwerkelijke* keyboard/muis-inactiviteit, negeert software wake requests |
+| 🖥️ **Configureerbare Timer** | Kies 5, 10, 15, 30 of 60 minuten inactiviteit voor blackout |
 | 🎵 **Audio-Safe Blackout** | Projecteert een zwarte overlay i.p.v. hardware standby — HDMI/eARC blijft verbonden |
-| 🖱️ **Zero-Pixel Cursor** | Verbergt de muiscursor volledig om inbranden van de aanwijzer te voorkomen |
-| ⌨️ **Sneltoetsen** | `Alt+P` voor directe blackout, `Alt+Shift+P` voor hardware standby (Pixel Refresh) |
-| 🔄 **Resilience** | Taakplanner watchdog zorgt dat NAOLEDP altijd draait |
+| 🖱️ **Wake Triggers** | Schakel muis en/of toetsenbord wake apart in/uit |
+| 🎤 **Microfoon Wake** | Optionele wake-on-voice detectie |
+| ⌨️ **Sneltoetsen** | `Alt+P` voor directe blackout, `Alt+Shift+P` voor hardware standby |
+| 🔄 **Watchdog Bescherming** | Taakplanner zorgt dat PowerNAPS herstart na crashes |
+| 🛡️ **Systeemvak Bediening** | Rechtsklik voor instellingen, timer, watchdog toggle en meer |
 | ⚡ **Snelle Recovery** | Geen HDMI re-handshake nodig — direct wakker |
 
 ### Installatie
 
-1. Download de laatste `NAOLEDP.zip` van [Releases](../../releases)
+1. Download de laatste `PowerNAPS.zip` van [Releases](https://github.com/Emis-Dev/NAOLEDP/releases)
 2. Pak het ZIP-bestand uit
-3. Klik rechts op `install\Install-NAOLEDP.ps1` → **Uitvoeren met PowerShell** (als Administrator)
-4. Klaar! NAOLEDP beschermt nu je scherm.
+3. Dubbelklik op **`Install.exe`**
+4. Klaar! PowerNAPS beschermt nu je scherm.
 
 ### Sneltoetsen
 
@@ -97,23 +100,23 @@ Je hebt een premium OLED-monitor en een high-end audio-setup (zoals Sonos Beam v
 
 ### Deïnstallatie
 
-Klik rechts op `install\Uninstall-NAOLEDP.ps1` → **Uitvoeren met PowerShell** (als Administrator)
+Dubbelklik op **`Uninstall.exe`** (zit in de ZIP)
 
 ---
 
 ## Technical Details
 
-NAOLEDP is built with AutoHotkey v2 and compiled to a standalone executable. No dependencies required.
+PowerNAPS is built with AutoHotkey v2 and compiled to a standalone executable. No dependencies required.
 
 ### How It Works
 
 1. **Physical Idle Detection**: Uses `A_TimeIdlePhysical` to detect actual user input, bypassing software wake requests from Chrome, Qobuz, etc.
 
-2. **Black Overlay**: Instead of sending a hardware standby signal (`SendMessage 0xF170`), NAOLEDP creates a fullscreen black GUI window. On OLED panels, black = pixels off = zero burn-in risk.
+2. **Black Overlay**: Instead of sending a hardware standby signal (`SendMessage 0xF170`), PowerNAPS creates a fullscreen black GUI window. On OLED panels, black = pixels off = zero burn-in risk.
 
 3. **Cursor Hiding**: Uses `DllCall("ShowCursor", "Int", 0)` to completely hide the mouse pointer, eliminating any static element that could burn in.
 
-4. **Watchdog**: A Windows Task Scheduler task monitors NAOLEDP and restarts it if terminated unexpectedly.
+4. **Watchdog**: A Windows Task Scheduler task monitors PowerNAPS and restarts it if terminated unexpectedly.
 
 ### System Requirements
 
@@ -129,7 +132,7 @@ MIT License — See [LICENSE](LICENSE) for details.
 
 ## Disclaimer
 
-NAOLEDP is provided "as is" without warranty. While it's designed to help protect OLED panels, the authors are not responsible for any screen damage. OLED burn-in is influenced by many factors including usage patterns, panel quality, and manufacturer settings. Always enable your monitor's built-in Pixel Refresh features as an additional layer of protection.
+PowerNAPS is provided "as is" without warranty. While it's designed to help protect OLED panels, the authors are not responsible for any screen damage. OLED burn-in is influenced by many factors including usage patterns, panel quality, and manufacturer settings. Always enable your monitor's built-in Pixel Refresh features as an additional layer of protection.
 
 ---
 
