@@ -66,15 +66,8 @@ ExitApp()
 ; Clean up Windows notification tray icon settings for PowerNAPS and NAOLEDP
 CleanupNotificationCache() {
     try {
-        ; Use PowerShell to clean registry entries
-        psScript := "
-        Get-ChildItem 'HKCU:\Control Panel\NotifyIconSettings' -ErrorAction SilentlyContinue | ForEach-Object {
-            `$props = Get-ItemProperty `$_.PSPath -ErrorAction SilentlyContinue
-            if (`$props.ExecutablePath -like '*NAOLEDP*' -or `$props.ExecutablePath -like '*PowerNAPS*') {
-                Remove-Item `$_.PSPath -Force -ErrorAction SilentlyContinue
-            }
-        }
-        "
-        Run('powershell -WindowStyle Hidden -Command "' . psScript . '"',, "Hide")
+        ; Use PowerShell to clean registry entries - single line command
+        psCmd := "Get-ChildItem 'HKCU:\Control Panel\NotifyIconSettings' -EA SilentlyContinue | Where-Object { (Get-ItemProperty $_.PSPath -EA SilentlyContinue).ExecutablePath -like '*NAOLEDP*' -or (Get-ItemProperty $_.PSPath -EA SilentlyContinue).ExecutablePath -like '*PowerNAPS*' } | Remove-Item -Force -EA SilentlyContinue"
+        Run('powershell -WindowStyle Hidden -Command "' . psCmd . '"',, "Hide")
     }
 }
