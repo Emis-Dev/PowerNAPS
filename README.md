@@ -131,8 +131,28 @@ Power-NAPS is built with AutoHotkey v2 — a single portable executable with no 
 
 1. **Physical Idle Detection** — Uses `A_TimeIdlePhysical` to detect real user input, ignoring software wake requests
 2. **Black Overlay** — Instead of hardware standby, creates a fullscreen black window (OLED pixels = off)
-3. **Remote Session Detection** — Automatically detects RDP/TeamViewer and ignores remote input
+3. **Remote Session Detection** — Automatically detects remote desktop sessions and keeps screen dark while you work remotely
 4. **Instant Recovery** — No HDMI re-handshake needed, wake is instant
+
+### Supported Remote Desktop Tools
+
+When **Remote Control Mode** is enabled, PowerNAPS detects these tools and keeps your OLED dark:
+
+| Tool | Process Detected |
+|------|-----------------|
+| **Windows RDP** | `rdpclip.exe` + session flag |
+| **Chrome Remote Desktop** | `remoting_host.exe` |
+| **TeamViewer** | `TeamViewer.exe`, `TeamViewer_Service.exe` |
+| **AnyDesk** | `AnyDesk.exe` |
+| **Tactical RMM / MeshCentral** | `tacticalrmm.exe`, `meshagent.exe` |
+| **Parsec** | `parsecd.exe`, `pservice.exe` |
+| **Splashtop** | `SRService.exe`, `SplashtopStreamer.exe` |
+| **ConnectWise ScreenConnect** | `ScreenConnect.ClientService.exe` |
+| **VNC** (TightVNC, RealVNC, UltraVNC) | `tvnserver.exe`, `winvnc.exe`, `vncserver.exe` |
+| **LogMeIn / GoToMyPC** | `LogMeIn.exe`, `GoToMyPC.exe` |
+| **Rustdesk** | `rustdesk.exe` |
+| **NoMachine** | `nxserver.exe`, `nxd.exe` |
+| **Windows Quick Assist** | `quickassist.exe`, `msra.exe` |
 
 ### Why Not Just Use Windows Screen Saver?
 

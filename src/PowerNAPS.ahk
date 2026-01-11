@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.6                                 ║
+; ║                              PowerNAPS v2.7                                 ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -69,8 +69,8 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("PowerNAPS v2.6", (*) => 0)
-A_TrayMenu.Disable("PowerNAPS v2.6")
+A_TrayMenu.Add("PowerNAPS v2.7", (*) => 0)
+A_TrayMenu.Disable("PowerNAPS v2.7")
 A_TrayMenu.Add()  ; Separator
 
 ; Timer submenu
@@ -251,23 +251,85 @@ ToggleRemoteMode(*) {
     SetTimer(() => ToolTip(), -2000)
 }
 
-; Helper: Detect if we're in a remote session (RDP, TeamViewer, etc.)
-; Uses multiple detection methods for reliability
+; Helper: Detect if we're in a remote session
+; Supports: RDP, Chrome Remote Desktop, TeamViewer, AnyDesk, Tactical RMM, Parsec,
+;           Splashtop, ConnectWise, VNC, LogMeIn, GoToMyPC, Rustdesk, NoMachine, Quick Assist
 IsRemoteSession() {
-    ; Method 1: Check Windows Terminal Services session flag
-    ; This works when you RDP INTO this machine
+    ; Method 1: Windows Terminal Services / RDP session flag
     if DllCall("GetSystemMetrics", "Int", 0x1000, "Int")
         return true
     
-    ; Method 2: Check if rdpclip.exe is running (indicates active RDP)
+    ; Method 2: RDP clipboard process
     try {
         if ProcessExist("rdpclip.exe")
             return true
     }
     
-    ; Method 3: Check for TeamViewer/AnyDesk connections
+    ; Method 3: Chrome Remote Desktop
     try {
-        if ProcessExist("TeamViewer.exe") || ProcessExist("AnyDesk.exe")
+        if ProcessExist("remoting_host.exe")
+            return true
+    }
+    
+    ; Method 4: Tactical RMM / MeshCentral
+    try {
+        if ProcessExist("tacticalrmm.exe") || ProcessExist("meshagent.exe")
+            return true
+    }
+    
+    ; Method 5: TeamViewer / AnyDesk
+    try {
+        if ProcessExist("TeamViewer.exe") || ProcessExist("TeamViewer_Service.exe")
+            return true
+        if ProcessExist("AnyDesk.exe")
+            return true
+    }
+    
+    ; Method 6: Parsec (gaming remote desktop)
+    try {
+        if ProcessExist("parsecd.exe") || ProcessExist("pservice.exe")
+            return true
+    }
+    
+    ; Method 7: Splashtop
+    try {
+        if ProcessExist("SRService.exe") || ProcessExist("SplashtopStreamer.exe")
+            return true
+    }
+    
+    ; Method 8: ConnectWise ScreenConnect / Control
+    try {
+        if ProcessExist("ScreenConnect.ClientService.exe") || ProcessExist("ScreenConnect.WindowsClient.exe")
+            return true
+    }
+    
+    ; Method 9: VNC variants (TightVNC, RealVNC, UltraVNC, TigerVNC)
+    try {
+        if ProcessExist("tvnserver.exe") || ProcessExist("winvnc.exe") || ProcessExist("vncserver.exe")
+            return true
+    }
+    
+    ; Method 10: LogMeIn / GoToMyPC
+    try {
+        if ProcessExist("LogMeIn.exe") || ProcessExist("g2mstart.exe") || ProcessExist("GoToMyPC.exe")
+            return true
+    }
+    
+    ; Method 11: Rustdesk (open source)
+    try {
+        if ProcessExist("rustdesk.exe")
+            return true
+    }
+    
+    ; Method 12: NoMachine
+    try {
+        if ProcessExist("nxserver.exe") || ProcessExist("nxd.exe")
+            return true
+    }
+    
+    ; Method 13: Windows Quick Assist / Remote Assistance
+    try {
+        if ProcessExist("quickassist.exe") || ProcessExist("msra.exe")
             return true
     }
     
