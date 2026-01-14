@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.8                                 ║
+; ║                              PowerNAPS v2.10                                ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -54,7 +54,6 @@ ScheduleEnd := IniRead(SettingsFile, "Settings", "ScheduleEnd", "17:00")
 SoundEnabled := IniRead(SettingsFile, "Settings", "SoundEnabled", 0)
 MicEnabled := IniRead(SettingsFile, "Settings", "MicEnabled", 0)
 DimLevel := IniRead(SettingsFile, "Settings", "DimLevel", 255)  ; 0=transparent, 255=fully black
-RemoteControlMode := IniRead(SettingsFile, "Settings", "RemoteControlMode", 1)  ; Auto-detect remote by default
 
 ; ═══════════════════════════════════════════════════════════════════════════════
 ; SYSTEM TRAY SETUP
@@ -69,8 +68,8 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("PowerNAPS v2.8", (*) => 0)
-A_TrayMenu.Disable("PowerNAPS v2.8")
+A_TrayMenu.Add("PowerNAPS v2.10", (*) => 0)
+A_TrayMenu.Disable("PowerNAPS v2.10")
 A_TrayMenu.Add()  ; Separator
 
 ; Timer submenu
@@ -90,8 +89,6 @@ TriggersMenu.Add("Keyboard wakes screen", ToggleKeyboard)
 TriggersMenu.Add("Gamepad wakes screen", ToggleGamepad)
 TriggersMenu.Add("Audio output wakes screen", ToggleSound)
 TriggersMenu.Add("Microphone wakes screen", ToggleMic)
-TriggersMenu.Add()  ; Separator
-TriggersMenu.Add("🖥️ Remote control: stay dark", ToggleRemoteMode)
 TriggersMenu.Add()  ; Separator
 
 ; Schedule submenu
@@ -119,7 +116,7 @@ A_TrayMenu.Add("🌑 Darkness", DarknessMenu)
 
 A_TrayMenu.Add()  ; Separator
 A_TrayMenu.Add("🌙 PowerNAP Now (Alt+P)", (*) => ActivateBlackScreen())
-A_TrayMenu.Add("💤 Hardware Standby (Alt+Shift+P)", (*) => SendMessage(0x0112, 0xF170, 2,, "Program Manager"))
+A_TrayMenu.Add("💤 Turn Monitor Off (Alt+Shift+P)", (*) => TurnMonitorOff())
 A_TrayMenu.Add()  ; Separator
 
 ; Watchdog submenu
@@ -239,136 +236,8 @@ ToggleMic(*) {
     SetTimer(() => ToolTip(), -2000)
 }
 
-ToggleRemoteMode(*) {
-    global RemoteControlMode, SettingsFile
-    RemoteControlMode := !RemoteControlMode
-    IniWrite(RemoteControlMode, SettingsFile, "Settings", "RemoteControlMode")
-    UpdateTriggerChecks()
-    if RemoteControlMode
-        ToolTip("Remote control mode: ON (stays dark during remote session)", 10, 10)
-    else
-        ToolTip("Remote control mode: OFF (wake triggers normal)", 10, 10)
-    SetTimer(() => ToolTip(), -2000)
-}
-
-; Helper: Detect if we're in a remote session
-; Supports: RDP, Chrome Remote Desktop, TeamViewer, AnyDesk, Tactical RMM, Parsec,
-;           Splashtop, ConnectWise, VNC, LogMeIn, GoToMyPC, Rustdesk, NoMachine, Quick Assist
-IsRemoteSession() {
-    ; Method 1: Windows Terminal Services / RDP session flag
-    if DllCall("GetSystemMetrics", "Int", 0x1000, "Int")
-        return true
-    
-    ; Method 2: RDP clipboard process
-    try {
-        if ProcessExist("rdpclip.exe")
-            return true
-    }
-    
-    ; Method 3: Chrome Remote Desktop
-    try {
-        if ProcessExist("remoting_host.exe")
-            return true
-    }
-    
-    ; Method 4: Tactical RMM / MeshCentral
-    try {
-        if ProcessExist("tacticalrmm.exe") || ProcessExist("meshagent.exe")
-            return true
-    }
-    
-    ; Method 5: TeamViewer / AnyDesk
-    try {
-        if ProcessExist("TeamViewer.exe") || ProcessExist("TeamViewer_Service.exe")
-            return true
-        if ProcessExist("AnyDesk.exe")
-            return true
-    }
-    
-    ; Method 6: Parsec (gaming remote desktop)
-    try {
-        if ProcessExist("parsecd.exe") || ProcessExist("pservice.exe")
-            return true
-    }
-    
-    ; Method 7: Splashtop
-    try {
-        if ProcessExist("SRService.exe") || ProcessExist("SplashtopStreamer.exe")
-            return true
-    }
-    
-    ; Method 8: ConnectWise ScreenConnect / Control
-    try {
-        if ProcessExist("ScreenConnect.ClientService.exe") || ProcessExist("ScreenConnect.WindowsClient.exe")
-            return true
-    }
-    
-    ; Method 9: VNC variants (TightVNC, RealVNC, UltraVNC, TigerVNC)
-    try {
-        if ProcessExist("tvnserver.exe") || ProcessExist("winvnc.exe") || ProcessExist("vncserver.exe")
-            return true
-    }
-    
-    ; Method 10: LogMeIn / GoToMyPC
-    try {
-        if ProcessExist("LogMeIn.exe") || ProcessExist("g2mstart.exe") || ProcessExist("GoToMyPC.exe")
-            return true
-    }
-    
-    ; Method 11: Rustdesk (open source)
-    try {
-        if ProcessExist("rustdesk.exe")
-            return true
-    }
-    
-    ; Method 12: NoMachine
-    try {
-        if ProcessExist("nxserver.exe") || ProcessExist("nxd.exe")
-            return true
-    }
-    
-    ; Method 13: Windows Quick Assist / Remote Assistance
-    try {
-        if ProcessExist("quickassist.exe") || ProcessExist("msra.exe")
-            return true
-    }
-    
-    return false
-}
-
-; Track remote session state changes
-WasRemoteSession := IsRemoteSession()
-
-RemoteSessionMonitor() {
-    global WasRemoteSession, RemoteControlMode, BlackScreen
-    isRemote := IsRemoteSession()
-    
-    if (isRemote && !WasRemoteSession) {
-        ; Remote session just started
-        if RemoteControlMode {
-            ; HIDE the overlay so remote user can see the desktop (audio-safe approach)
-            if WinExist("ahk_id " BlackScreen.Hwnd) {
-                DllCall("ShowCursor", "Int", 1)  ; Restore cursor
-                BlackScreen.Hide()
-            }
-            ; NOTE: We deliberately do NOT use hardware monitor power-off here
-            ; SC_MONITORPOWER breaks HDMI-ARC/eARC audio connections!
-            ; Remote mode just disables wake triggers so overlay stays dark.
-            TrayTip("PowerNAPS", "Remote session detected!`nScreen protection paused - remote user can see desktop.`nHDMI-ARC audio preserved.", 1)
-        } else {
-            TrayTip("PowerNAPS", "Remote session detected.`nEnable 'Remote control: stay dark' in Wake Triggers to protect OLED.", 1)
-        }
-    } else if (!isRemote && WasRemoteSession) {
-        ; Remote session ended
-        TrayTip("PowerNAPS", "Remote session ended.`nResuming normal operation.", 1)
-    }
-    
-    WasRemoteSession := isRemote
-}
-SetTimer(RemoteSessionMonitor, 2000)
-
 UpdateTriggerChecks() {
-    global TriggersMenu, MouseEnabled, KeyboardEnabled, GamepadEnabled, ScheduleEnabled, SoundEnabled, MicEnabled, RemoteControlMode
+    global TriggersMenu, MouseEnabled, KeyboardEnabled, GamepadEnabled, ScheduleEnabled, SoundEnabled, MicEnabled
     if MouseEnabled
         TriggersMenu.Check("Mouse wakes screen")
     else
@@ -389,10 +258,6 @@ UpdateTriggerChecks() {
         TriggersMenu.Check("Microphone wakes screen")
     else
         TriggersMenu.Uncheck("Microphone wakes screen")
-    if RemoteControlMode
-        TriggersMenu.Check("🖥️ Remote control: stay dark")
-    else
-        TriggersMenu.Uncheck("🖥️ Remote control: stay dark")
     ; Update schedule submenu
     if ScheduleEnabled
         ScheduleMenu.Check("❤️ Enable (default)")
@@ -445,15 +310,34 @@ BlackScreen.BackColor := "000000"
 ; Keyboard detection uses A_TimeIdlePhysical via timer (more reliable than InputHook with fullscreen GUI)
 LastIdleTime := A_TimeIdlePhysical
 
+; Cooldown tracking - prevents immediate reactivation after wake (especially for remote input)
+LastDeactivationTime := 0
+
 SetTimer(CheckStatus, 5000)
 
 CheckStatus() {
-    global InactiviteitTijd, WaarschuwingTijd, BlackScreen, ScheduleEnabled, ScheduleStart, ScheduleEnd
+    global InactiviteitTijd, WaarschuwingTijd, BlackScreen, ScheduleEnabled, ScheduleStart, ScheduleEnd, LastDeactivationTime
     
     ; Check if we're in scheduled "no nap" window
     if ScheduleEnabled && IsWithinSchedule(ScheduleStart, ScheduleEnd) {
         ToolTip()  ; Clear any tooltip
         return     ; Don't activate nap during scheduled hours
+    }
+    
+    ; Cooldown check: ensure full timer duration has passed since last deactivation
+    ; This prevents immediate reactivation when wake was triggered by remote input
+    ; (A_TimeIdlePhysical is not reset by remote keyboard/mouse)
+    if (LastDeactivationTime > 0) {
+        TimeSinceDeactivation := A_TickCount - LastDeactivationTime
+        if (TimeSinceDeactivation < InactiviteitTijd) {
+            ; Still in cooldown period - show remaining time if close to reactivation
+            Remaining := InactiviteitTijd - TimeSinceDeactivation
+            if (Remaining < WaarschuwingTijd && Remaining > 0) {
+                Resterend := Round(Remaining / 1000)
+                ToolTip("PowerNAPS: Bescherming start over " Resterend "s...", 10, 10)
+            }
+            return
+        }
     }
     
     IdleTime := A_TimeIdlePhysical
@@ -487,14 +371,11 @@ IsWithinSchedule(startTime, endTime) {
 ; MOUSE MOVEMENT DETECTION
 ; ═══════════════════════════════════════════════════════════════════════════════
 MouseMoveCheck() {
-    global BlackScreen, MouseEnabled, RemoteControlMode
+    global BlackScreen, MouseEnabled
     static LastX := 0, LastY := 0
     if !WinExist("ahk_id " BlackScreen.Hwnd)
         return
     if !MouseEnabled
-        return
-    ; Skip if in remote session and remote mode is enabled
-    if (RemoteControlMode && IsRemoteSession())
         return
     MouseGetPos(&CurrentX, &CurrentY)
     if (Abs(CurrentX - LastX) > 10 || Abs(CurrentY - LastY) > 10) {
@@ -508,13 +389,10 @@ SetTimer(MouseMoveCheck, 500)
 ; KEYBOARD ACTIVITY DETECTION (uses idle time reset)
 ; ═══════════════════════════════════════════════════════════════════════════════
 KeyboardCheck() {
-    global BlackScreen, KeyboardEnabled, LastIdleTime, RemoteControlMode
+    global BlackScreen, KeyboardEnabled, LastIdleTime
     if !WinExist("ahk_id " BlackScreen.Hwnd)
         return
     if !KeyboardEnabled
-        return
-    ; Skip if in remote session and remote mode is enabled
-    if (RemoteControlMode && IsRemoteSession())
         return
     ; If idle time decreased significantly, user pressed a key
     CurrentIdle := A_TimeIdlePhysical
@@ -652,17 +530,7 @@ SetTimer(MicCheck, 500)
 ; BLACKSCREEN FUNCTIONS
 ; ═══════════════════════════════════════════════════════════════════════════════
 ActivateBlackScreen() {
-    global BlackScreen, LastIdleTime, DimLevel, RemoteControlMode
-    
-    ; If in remote session and remote mode enabled, DO NOT show the overlay
-    ; Remote viewers should see the desktop, not a black screen
-    ; NOTE: We do NOT use SC_MONITORPOWER as it breaks HDMI-ARC/eARC audio!
-    ; Without the overlay, the local OLED will display (not ideal) but the remote user can work
-    if (RemoteControlMode && IsRemoteSession()) {
-        ; Don't activate overlay during remote sessions - the remote viewer needs to see the desktop
-        ; The physical screen will show the desktop too, but that's the tradeoff for remote access
-        return
-    }
+    global BlackScreen, LastIdleTime, DimLevel
     
     if !WinExist("ahk_id " BlackScreen.Hwnd) {
         BlackScreen.Show("x0 y0 w" . A_ScreenWidth . " h" . A_ScreenHeight)
@@ -681,12 +549,22 @@ ActivateBlackScreen() {
 }
 
 DeactivateBlackScreen() {
-    global BlackScreen
+    global BlackScreen, LastDeactivationTime
     if WinExist("ahk_id " BlackScreen.Hwnd) {
         DllCall("ShowCursor", "Int", 1)  ; Restore cursor
         BlackScreen.Hide()
         ToolTip()
+        ; Record deactivation time to enforce cooldown before next activation
+        ; This ensures the full timer duration must pass, even if A_TimeIdlePhysical
+        ; wasn't reset (e.g., remote desktop input)
+        LastDeactivationTime := A_TickCount
     }
+}
+
+; Turn monitor off - also exits PowerNAP mode first
+TurnMonitorOff() {
+    DeactivateBlackScreen()  ; Exit PowerNAP mode if active
+    SendMessage(0x0112, 0xF170, 2,, "Program Manager")  ; Turn monitor off
 }
 
 ; ═══════════════════════════════════════════════════════════════════════════════
@@ -704,8 +582,8 @@ WM_QUERYENDSESSION(*) {
 ; Alt + P: Instant audio-safe nap (HDMI stays connected)
 !p::ActivateBlackScreen()
 
-; Alt + Shift + P: Full hardware standby (for nightly Pixel Refresh)
-!+p::SendMessage(0x0112, 0xF170, 2,, "Program Manager")
+; Alt + Shift + P: Turn monitor off (exits PowerNAP first)
+!+p::TurnMonitorOff()
 
 ; Escape: Emergency exit from blackscreen (always works)
 ~Escape::DeactivateBlackScreen()
@@ -741,10 +619,7 @@ WM_QUERYENDSESSION(*) {
 ~*Tab::OnAnyKey()
 
 OnAnyKey() {
-    global BlackScreen, KeyboardEnabled, RemoteControlMode
-    ; Skip if in remote session and remote mode is enabled
-    if (RemoteControlMode && IsRemoteSession())
-        return
+    global BlackScreen, KeyboardEnabled
     if KeyboardEnabled && WinExist("ahk_id " BlackScreen.Hwnd)
         DeactivateBlackScreen()
 }
