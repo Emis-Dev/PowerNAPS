@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.10                                ║
+; ║                              PowerNAPS v2.11                                ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -68,8 +68,8 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("PowerNAPS v2.10", (*) => 0)
-A_TrayMenu.Disable("PowerNAPS v2.10")
+A_TrayMenu.Add("PowerNAPS v2.11", (*) => 0)
+A_TrayMenu.Disable("PowerNAPS v2.11")
 A_TrayMenu.Add()  ; Separator
 
 ; Timer submenu
@@ -138,7 +138,7 @@ SetTimerDuration(minutes) {
     InactiviteitTijd := minutes * 60000
     IniWrite(minutes, SettingsFile, "Settings", "TimerMinutes")
     UpdateTimerCheck()
-    ToolTip("Timer set to " . minutes . " minutes", 10, 10)
+    ShowTooltipBottomRight("Timer set to " . minutes . " minutes")
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -182,7 +182,7 @@ ToggleMouse(*) {
     MouseEnabled := !MouseEnabled
     IniWrite(MouseEnabled, SettingsFile, "Settings", "MouseEnabled")
     UpdateTriggerChecks()
-    ToolTip("Mouse wake: " . (MouseEnabled ? "ON" : "OFF"), 10, 10)
+    ShowTooltipBottomRight("Mouse wake: " . (MouseEnabled ? "ON" : "OFF"))
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -191,7 +191,7 @@ ToggleKeyboard(*) {
     KeyboardEnabled := !KeyboardEnabled
     IniWrite(KeyboardEnabled, SettingsFile, "Settings", "KeyboardEnabled")
     UpdateTriggerChecks()
-    ToolTip("Keyboard wake: " . (KeyboardEnabled ? "ON" : "OFF"), 10, 10)
+    ShowTooltipBottomRight("Keyboard wake: " . (KeyboardEnabled ? "ON" : "OFF"))
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -200,7 +200,7 @@ ToggleGamepad(*) {
     GamepadEnabled := !GamepadEnabled
     IniWrite(GamepadEnabled, SettingsFile, "Settings", "GamepadEnabled")
     UpdateTriggerChecks()
-    ToolTip("Gamepad wake: " . (GamepadEnabled ? "ON" : "OFF"), 10, 10)
+    ShowTooltipBottomRight("Gamepad wake: " . (GamepadEnabled ? "ON" : "OFF"))
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -210,9 +210,9 @@ ToggleSchedule(*) {
     IniWrite(ScheduleEnabled, SettingsFile, "Settings", "ScheduleEnabled")
     UpdateTriggerChecks()
     if ScheduleEnabled
-        ToolTip("Schedule ON: No nap " . ScheduleStart . "-" . ScheduleEnd, 10, 10)
+        ShowTooltipBottomRight("Schedule ON: No nap " . ScheduleStart . "-" . ScheduleEnd)
     else
-        ToolTip("Schedule OFF", 10, 10)
+        ShowTooltipBottomRight("Schedule OFF")
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -222,7 +222,7 @@ SetScheduleStart(*) {
     if (result.Result = "OK" && RegExMatch(result.Value, "^\d{1,2}:\d{2}$")) {
         ScheduleStart := result.Value
         IniWrite(ScheduleStart, SettingsFile, "Settings", "ScheduleStart")
-        ToolTip("Schedule start: " . ScheduleStart, 10, 10)
+        ShowTooltipBottomRight("Schedule start: " . ScheduleStart)
         SetTimer(() => ToolTip(), -2000)
     }
 }
@@ -233,7 +233,7 @@ SetScheduleEnd(*) {
     if (result.Result = "OK" && RegExMatch(result.Value, "^\d{1,2}:\d{2}$")) {
         ScheduleEnd := result.Value
         IniWrite(ScheduleEnd, SettingsFile, "Settings", "ScheduleEnd")
-        ToolTip("Schedule end: " . ScheduleEnd, 10, 10)
+        ShowTooltipBottomRight("Schedule end: " . ScheduleEnd)
         SetTimer(() => ToolTip(), -2000)
     }
 }
@@ -243,7 +243,7 @@ ToggleSound(*) {
     SoundEnabled := !SoundEnabled
     IniWrite(SoundEnabled, SettingsFile, "Settings", "SoundEnabled")
     UpdateTriggerChecks()
-    ToolTip("Audio output wake: " . (SoundEnabled ? "ON" : "OFF"), 10, 10)
+    ShowTooltipBottomRight("Audio output wake: " . (SoundEnabled ? "ON" : "OFF"))
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -252,7 +252,7 @@ ToggleMic(*) {
     MicEnabled := !MicEnabled
     IniWrite(MicEnabled, SettingsFile, "Settings", "MicEnabled")
     UpdateTriggerChecks()
-    ToolTip("Microphone wake: " . (MicEnabled ? "ON" : "OFF"), 10, 10)
+    ShowTooltipBottomRight("Microphone wake: " . (MicEnabled ? "ON" : "OFF"))
     SetTimer(() => ToolTip(), -2000)
 }
 
@@ -287,14 +287,14 @@ UpdateTriggerChecks() {
 
 EnableWatchdog() {
     Run('schtasks /change /tn "PowerNAPS-Watchdog" /enable',, "Hide")
-    ToolTip("Watchdog enabled", 10, 10)
+    ShowTooltipBottomRight("Watchdog enabled")
     SetTimer(() => ToolTip(), -2000)
     SetTimer(UpdateWatchdogCheck, -500)
 }
 
 DisableWatchdog() {
     Run('schtasks /change /tn "PowerNAPS-Watchdog" /disable',, "Hide")
-    ToolTip("Watchdog disabled", 10, 10)
+    ShowTooltipBottomRight("Watchdog disabled")
     SetTimer(() => ToolTip(), -2000)
     SetTimer(UpdateWatchdogCheck, -500)
 }
@@ -344,28 +344,36 @@ CheckStatus() {
         return     ; Don't activate nap during scheduled hours
     }
     
+    IdleTime := A_TimeIdlePhysical
+    
+    ; If user has recent physical activity, skip everything (no warnings, no activation)
+    if (IdleTime < (InactiviteitTijd - WaarschuwingTijd)) {
+        ; User is active - clear any tooltip and reset cooldown if needed
+        if !WinExist("ahk_id " BlackScreen.Hwnd)
+            ToolTip()
+        return
+    }
+    
     ; Cooldown check: ensure full timer duration has passed since last deactivation
     ; This prevents immediate reactivation when wake was triggered by remote input
     ; (A_TimeIdlePhysical is not reset by remote keyboard/mouse)
     if (LastDeactivationTime > 0) {
         TimeSinceDeactivation := A_TickCount - LastDeactivationTime
         if (TimeSinceDeactivation < InactiviteitTijd) {
-            ; Still in cooldown period - show remaining time if close to reactivation
+            ; Still in cooldown period but only show warning if truly idle
             Remaining := InactiviteitTijd - TimeSinceDeactivation
             if (Remaining < WaarschuwingTijd && Remaining > 0) {
                 Resterend := Round(Remaining / 1000)
-                ToolTip("PowerNAPS: Bescherming start over " Resterend "s...", 10, 10)
+                ShowTooltipBottomRight("PowerNAPS: Bescherming start over " Resterend "s...")
             }
             return
         }
     }
     
-    IdleTime := A_TimeIdlePhysical
-    
     ; Warning phase: 60 seconds before nap
     if (IdleTime > (InactiviteitTijd - WaarschuwingTijd) && IdleTime < InactiviteitTijd) {
         Resterend := Round((InactiviteitTijd - IdleTime) / 1000)
-        ToolTip("PowerNAPS: Bescherming start over " Resterend "s...", 10, 10)
+        ShowTooltipBottomRight("PowerNAPS: Bescherming start over " Resterend "s...")
     }
     ; Activation phase: timer reached
     else if (IdleTime >= InactiviteitTijd) {
@@ -385,6 +393,15 @@ IsWithinSchedule(startTime, endTime) {
     startInt := Integer(StrReplace(startTime, ":"))
     endInt := Integer(StrReplace(endTime, ":"))
     return (currentTime >= startInt && currentTime <= endInt)
+}
+
+; Helper function to show tooltip in bottom-right corner
+ShowTooltipBottomRight(text) {
+    ; Get screen dimensions and calculate bottom-right position
+    ; Offset from edge to account for tooltip size and taskbar
+    xPos := A_ScreenWidth - 350
+    yPos := A_ScreenHeight - 60
+    ToolTip(text, xPos, yPos)
 }
 
 ; ═══════════════════════════════════════════════════════════════════════════════
@@ -669,7 +686,7 @@ AdjustDimLevel(change) {
     
     ; Show feedback
     brightness := Round((255 - DimLevel) / 255 * 100)
-    ToolTip("Brightness: " . brightness . "%", 10, 10)
+    ShowTooltipBottomRight("Brightness: " . brightness . "%")
     SetTimer(() => ToolTip(), -1500)
 }
 
@@ -692,10 +709,10 @@ SetDarkness(percent) {
     
     ; Warning for non-100% darkness
     if (percent < 100) {
-        ToolTip("Darkness: " . percent . "% (Energy saver mode - not full OLED protection)", 10, 10)
+        ShowTooltipBottomRight("Darkness: " . percent . "% (Energy saver mode - not full OLED protection)")
         SetTimer(() => ToolTip(), -3000)
     } else {
-        ToolTip("Darkness: 100% (Full OLED protection)", 10, 10)
+        ShowTooltipBottomRight("Darkness: 100% (Full OLED protection)")
         SetTimer(() => ToolTip(), -1500)
     }
 }
