@@ -366,16 +366,17 @@ UpdateAutoOffCheck() {
     try AutoOffMenu.Uncheck("10 minutes")
     try AutoOffMenu.Uncheck("15 minutes")
     try AutoOffMenu.Uncheck("30 minutes")
-    if (AutoScreenOffMinutes = 0)
+    if (AutoScreenOffMinutes = 0) {
         try AutoOffMenu.Check("❤️ Disabled (default)")
-    else if (AutoScreenOffMinutes = 5)
+    } else if (AutoScreenOffMinutes = 5) {
         try AutoOffMenu.Check("5 minutes")
-    else if (AutoScreenOffMinutes = 10)
+    } else if (AutoScreenOffMinutes = 10) {
         try AutoOffMenu.Check("10 minutes")
-    else if (AutoScreenOffMinutes = 15)
+    } else if (AutoScreenOffMinutes = 15) {
         try AutoOffMenu.Check("15 minutes")
-    else if (AutoScreenOffMinutes = 30)
+    } else if (AutoScreenOffMinutes = 30) {
         try AutoOffMenu.Check("30 minutes")
+    }
 }
 
 SetTimer(CheckStatus, 5000)
