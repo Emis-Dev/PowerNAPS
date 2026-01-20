@@ -645,11 +645,8 @@ ActivateBlackScreen() {
         } catch {
             ; Ignore - window timing issue
         }
-        ; Hide cursor using SystemParametersInfo (more reliable than ShowCursor counter)
-        DllCall("SystemParametersInfo", "UInt", 0x0057, "UInt", 0, "Ptr", 0, "UInt", 0)  ; SPI_SETCURSORS with null
-        ; Also use ShowCursor in a loop to ensure counter goes negative
-        Loop 5
-            DllCall("ShowCursor", "Int", 0)
+        ; Hide cursor by replacing all system cursors with blank cursor
+        HideCursor()
         LastIdleTime := A_TimeIdlePhysical  ; Reset tracking
         NapStartTime := A_TickCount  ; Track when nap started for auto screen-off
         ToolTip()
@@ -659,11 +656,8 @@ ActivateBlackScreen() {
 DeactivateBlackScreen() {
     global BlackScreen, LastDeactivationTime, NapStartTime
     if WinExist("ahk_id " BlackScreen.Hwnd) {
-        ; Restore cursor - loop to counter the hides
-        Loop 5
-            DllCall("ShowCursor", "Int", 1)
-        ; Reload system cursors to ensure they're visible
-        DllCall("SystemParametersInfo", "UInt", 0x0057, "UInt", 0, "Ptr", 0, "UInt", 0)
+        ; Restore all system cursors
+        RestoreCursor()
         BlackScreen.Hide()
         ToolTip()
         ; Record deactivation time to enforce cooldown before next activation
@@ -672,6 +666,34 @@ DeactivateBlackScreen() {
         LastDeactivationTime := A_TickCount
         NapStartTime := 0  ; Reset nap timer
     }
+}
+
+; Hide cursor by replacing all system cursors with a blank cursor
+HideCursor() {
+    ; Create a blank 1x1 cursor
+    static blankCursor := 0
+    if !blankCursor {
+        ; Create a 1x1 AND mask (all 1s = transparent)
+        andMask := Buffer(4, 0xFF)
+        ; Create a 1x1 XOR mask (all 0s = black, but AND mask makes it invisible)
+        xorMask := Buffer(4, 0)
+        blankCursor := DllCall("CreateCursor", "Ptr", 0, "Int", 0, "Int", 0, "Int", 1, "Int", 1, "Ptr", andMask, "Ptr", xorMask, "Ptr")
+    }
+    
+    ; Replace all standard cursors with the blank one
+    ; OCR_* cursor IDs
+    cursorIds := [32512, 32513, 32514, 32515, 32516, 32640, 32641, 32642, 32643, 32644, 32645, 32646, 32648, 32649, 32650, 32651]
+    for id in cursorIds {
+        ; CopyCursor is a macro for CopyIcon in Windows
+        copyCursor := DllCall("CopyIcon", "Ptr", blankCursor, "Ptr")
+        DllCall("SetSystemCursor", "Ptr", copyCursor, "UInt", id)
+    }
+}
+
+; Restore all system cursors to defaults
+RestoreCursor() {
+    ; SPI_SETCURSORS reloads all system cursors from their defaults
+    DllCall("SystemParametersInfo", "UInt", 0x0057, "UInt", 0, "Ptr", 0, "UInt", 0)
 }
 
 ; Turn monitor off - also exits PowerNAP mode first
