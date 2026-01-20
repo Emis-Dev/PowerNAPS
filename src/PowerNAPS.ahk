@@ -60,8 +60,10 @@ AutoScreenOffMinutes := IniRead(SettingsFile, "Settings", "AutoScreenOffMinutes"
 ; SYSTEM TRAY SETUP
 ; ═══════════════════════════════════════════════════════════════════════════════
 A_IconTip := "PowerNAPS - Screen Protection Active"
-; Load custom icon
-IconPath := A_ScriptDir . "\assets\powernaps-icon.ico"
+; Load custom icon - check multiple locations
+IconPath := A_ScriptDir . "\..\assets\powernaps-icon.ico"
+if !FileExist(IconPath)
+    IconPath := A_ScriptDir . "\assets\powernaps-icon.ico"
 if !FileExist(IconPath)
     IconPath := EnvGet("APPDATA") . "\PowerNAPS\assets\powernaps-icon.ico"
 if FileExist(IconPath)
@@ -69,30 +71,74 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("PowerNAPS v2.12", (*) => 0)
-A_TrayMenu.Disable("PowerNAPS v2.12")
+A_TrayMenu.Add("PowerNAPS v2.13", (*) => 0)
+A_TrayMenu.Disable("PowerNAPS v2.13")
 A_TrayMenu.Add()  ; Separator
 
-; Timer submenu
+; ═══════════════════════════════════════════════════════════════════════════════
+; PowerNAP submenu (black overlay mode - keeps audio alive)
+; ═══════════════════════════════════════════════════════════════════════════════
+PowerNapMenu := Menu()
+PowerNapMenu.Add("▶️ Start Now (Alt+P)", (*) => ActivateBlackScreen())
+PowerNapMenu.Add()
+
+; Darkness submenu inside PowerNAP
+DarknessMenu := Menu()
+DarknessMenu.Add("❤️ 100% (default)", (*) => SetDarkness(100))
+DarknessMenu.Add("95%", (*) => SetDarkness(95))
+DarknessMenu.Add("90%", (*) => SetDarkness(90))
+DarknessMenu.Add("85%", (*) => SetDarkness(85))
+DarknessMenu.Add("80%", (*) => SetDarkness(80))
+DarknessMenu.Add("75%", (*) => SetDarkness(75))
+DarknessMenu.Add("70%", (*) => SetDarkness(70))
+UpdateDarknessCheck()
+PowerNapMenu.Add("🌑 Darkness", DarknessMenu)
+
+; Timer submenu inside PowerNAP
 TimerMenu := Menu()
 TimerMenu.Add("❤️ 5 minutes (default)", (*) => SetTimerDuration(5))
 TimerMenu.Add("10 minutes", (*) => SetTimerDuration(10))
 TimerMenu.Add("15 minutes", (*) => SetTimerDuration(15))
 TimerMenu.Add("30 minutes", (*) => SetTimerDuration(30))
 TimerMenu.Add("60 minutes", (*) => SetTimerDuration(60))
-TimerMenu.Add()  ; Separator
+TimerMenu.Add()
 TimerMenu.Add("✏️ Custom...", (*) => SetCustomTimer())
 UpdateTimerCheck()
-A_TrayMenu.Add("⏱️ Timer", TimerMenu)
+PowerNapMenu.Add("⏱️ Idle Timer", TimerMenu)
 
-; Activation triggers submenu
+A_TrayMenu.Add("🌙 PowerNAP", PowerNapMenu)
+
+; ═══════════════════════════════════════════════════════════════════════════════
+; Actual Nap submenu (hardware screen off - audio may stop on HDMI)
+; ═══════════════════════════════════════════════════════════════════════════════
+ActualNapMenu := Menu()
+ActualNapMenu.Add("▶️ Start Now (Alt+Shift+P)", (*) => TurnMonitorOff())
+ActualNapMenu.Add()
+
+; Auto screen-off timer inside Actual Nap
+AutoOffMenu := Menu()
+AutoOffMenu.Add("❤️ Disabled (default)", (*) => SetAutoScreenOff(0))
+AutoOffMenu.Add("5 minutes after PowerNAP", (*) => SetAutoScreenOff(5))
+AutoOffMenu.Add("10 minutes after PowerNAP", (*) => SetAutoScreenOff(10))
+AutoOffMenu.Add("15 minutes after PowerNAP", (*) => SetAutoScreenOff(15))
+AutoOffMenu.Add("30 minutes after PowerNAP", (*) => SetAutoScreenOff(30))
+UpdateAutoOffCheck()
+ActualNapMenu.Add("⏱️ Auto Timer", AutoOffMenu)
+
+A_TrayMenu.Add("💤 Actual Nap (Screen Off)", ActualNapMenu)
+
+A_TrayMenu.Add()  ; Separator
+
+; ═══════════════════════════════════════════════════════════════════════════════
+; Wake Triggers submenu
+; ═══════════════════════════════════════════════════════════════════════════════
 TriggersMenu := Menu()
 TriggersMenu.Add("Mouse wakes screen", ToggleMouse)
 TriggersMenu.Add("Keyboard wakes screen", ToggleKeyboard)
 TriggersMenu.Add("Gamepad wakes screen", ToggleGamepad)
 TriggersMenu.Add("Audio output wakes screen", ToggleSound)
 TriggersMenu.Add("Microphone wakes screen", ToggleMic)
-TriggersMenu.Add()  ; Separator
+TriggersMenu.Add()
 
 ; Schedule submenu
 ScheduleMenu := Menu()
@@ -104,33 +150,6 @@ TriggersMenu.Add("⏰ Schedule (no nap)", ScheduleMenu)
 
 UpdateTriggerChecks()
 A_TrayMenu.Add("🎯 Wake Triggers", TriggersMenu)
-
-; Darkness submenu
-DarknessMenu := Menu()
-DarknessMenu.Add("❤️ 100% (default)", (*) => SetDarkness(100))
-DarknessMenu.Add("95%", (*) => SetDarkness(95))
-DarknessMenu.Add("90%", (*) => SetDarkness(90))
-DarknessMenu.Add("85%", (*) => SetDarkness(85))
-DarknessMenu.Add("80%", (*) => SetDarkness(80))
-DarknessMenu.Add("75%", (*) => SetDarkness(75))
-DarknessMenu.Add("70%", (*) => SetDarkness(70))
-UpdateDarknessCheck()
-A_TrayMenu.Add("🌑 Darkness", DarknessMenu)
-
-; Auto screen-off submenu
-AutoOffMenu := Menu()
-AutoOffMenu.Add("❤️ Disabled (default)", (*) => SetAutoScreenOff(0))
-AutoOffMenu.Add("5 minutes", (*) => SetAutoScreenOff(5))
-AutoOffMenu.Add("10 minutes", (*) => SetAutoScreenOff(10))
-AutoOffMenu.Add("15 minutes", (*) => SetAutoScreenOff(15))
-AutoOffMenu.Add("30 minutes", (*) => SetAutoScreenOff(30))
-UpdateAutoOffCheck()
-A_TrayMenu.Add("📴 Auto Screen Off", AutoOffMenu)
-
-A_TrayMenu.Add()  ; Separator
-A_TrayMenu.Add("🌙 PowerNAP Now (Alt+P)", (*) => ActivateBlackScreen())
-A_TrayMenu.Add("💤 Turn Monitor Off (Alt+Shift+P)", (*) => TurnMonitorOff())
-A_TrayMenu.Add()  ; Separator
 
 ; Watchdog submenu
 WatchdogMenu := Menu()
