@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.14                                ║
+; ║                              PowerNAPS v2.15                                ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -71,8 +71,8 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("█ PowerNAPS v2.14 █", (*) => 0)
-A_TrayMenu.Disable("█ PowerNAPS v2.14 █")
+A_TrayMenu.Add("█ PowerNAPS v2.15 █", (*) => 0)
+A_TrayMenu.Disable("█ PowerNAPS v2.15 █")
 A_TrayMenu.Add()  ; Separator
 
 ; ═══════════════════════════════════════════════════════════════════════════════
@@ -707,32 +707,20 @@ DeactivateBlackScreen() {
     }
 }
 
-; Hide cursor by replacing all system cursors with a blank cursor
+; Hide cursor by clipping it to a tiny 1x1 region in the bottom-right corner (safe - cannot get stuck)
 HideCursor() {
-    ; Create a blank 1x1 cursor
-    static blankCursor := 0
-    if !blankCursor {
-        ; Create a 1x1 AND mask (all 1s = transparent)
-        andMask := Buffer(4, 0xFF)
-        ; Create a 1x1 XOR mask (all 0s = black, but AND mask makes it invisible)
-        xorMask := Buffer(4, 0)
-        blankCursor := DllCall("CreateCursor", "Ptr", 0, "Int", 0, "Int", 0, "Int", 1, "Int", 1, "Ptr", andMask, "Ptr", xorMask, "Ptr")
-    }
-    
-    ; Replace all standard cursors with the blank one
-    ; OCR_* cursor IDs
-    cursorIds := [32512, 32513, 32514, 32515, 32516, 32640, 32641, 32642, 32643, 32644, 32645, 32646, 32648, 32649, 32650, 32651]
-    for id in cursorIds {
-        ; CopyCursor is a macro for CopyIcon in Windows
-        copyCursor := DllCall("CopyIcon", "Ptr", blankCursor, "Ptr")
-        DllCall("SetSystemCursor", "Ptr", copyCursor, "UInt", id)
-    }
+    ; Create RECT structure for 1x1 region at bottom-right corner
+    rect := Buffer(16, 0)
+    NumPut("Int", A_ScreenWidth - 1, rect, 0)   ; left
+    NumPut("Int", A_ScreenHeight - 1, rect, 4)  ; top
+    NumPut("Int", A_ScreenWidth, rect, 8)       ; right
+    NumPut("Int", A_ScreenHeight, rect, 12)     ; bottom
+    DllCall("ClipCursor", "Ptr", rect)
 }
 
-; Restore all system cursors to defaults
+; Restore cursor by removing the clip region
 RestoreCursor() {
-    ; SPI_SETCURSORS reloads all system cursors from their defaults
-    DllCall("SystemParametersInfo", "UInt", 0x0057, "UInt", 0, "Ptr", 0, "UInt", 0)
+    DllCall("ClipCursor", "Ptr", 0)  ; NULL = remove clip, cursor free to move
 }
 
 ; Turn monitor off - also exits PowerNAP mode first
