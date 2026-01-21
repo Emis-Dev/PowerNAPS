@@ -2,7 +2,7 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v2.16                                ║
+; ║                              PowerNAPS v3.0                                 ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
@@ -71,7 +71,7 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("■■■ POWERNAPS v2.16 ■■■", (*) => MsgBox("PowerNAPS v2.16`nOLED Screen Protection`n`nAlt+P = PowerNAP`nAlt+Shift+P = Screen Off", "About PowerNAPS"))
+A_TrayMenu.Add("■■■ POWERNAPS v3.0 ■■■", (*) => MsgBox("PowerNAPS v3.0`nOLED Screen Protection`n`nAlt+P = PowerNAP`nAlt+Shift+P = Screen Off", "About PowerNAPS"))
 A_TrayMenu.Add()  ; Separator
 
 ; ═══════════════════════════════════════════════════════════════════════════════
@@ -137,9 +137,9 @@ A_TrayMenu.Add()  ; Separator
 TriggersMenu := Menu()
 TriggersMenu.Add("Mouse wakes screen", ToggleMouse)
 TriggersMenu.Add("Keyboard wakes screen", ToggleKeyboard)
-TriggersMenu.Add("Gamepad wakes screen", ToggleGamepad)
-TriggersMenu.Add("Audio output wakes screen", ToggleSound)
-TriggersMenu.Add("Microphone wakes screen", ToggleMic)
+TriggersMenu.Add("Gamepad wakes screen [beta]", ToggleGamepad)
+TriggersMenu.Add("Audio output wakes screen [beta]", ToggleSound)
+TriggersMenu.Add("Microphone wakes screen [beta]", ToggleMic)
 TriggersMenu.Add()
 
 ; Schedule submenu
@@ -299,17 +299,17 @@ UpdateTriggerChecks() {
     else
         TriggersMenu.Uncheck("Keyboard wakes screen")
     if GamepadEnabled
-        TriggersMenu.Check("Gamepad wakes screen")
+        TriggersMenu.Check("Gamepad wakes screen [beta]")
     else
-        TriggersMenu.Uncheck("Gamepad wakes screen")
+        TriggersMenu.Uncheck("Gamepad wakes screen [beta]")
     if SoundEnabled
-        TriggersMenu.Check("Audio output wakes screen")
+        TriggersMenu.Check("Audio output wakes screen [beta]")
     else
-        TriggersMenu.Uncheck("Audio output wakes screen")
+        TriggersMenu.Uncheck("Audio output wakes screen [beta]")
     if MicEnabled
-        TriggersMenu.Check("Microphone wakes screen")
+        TriggersMenu.Check("Microphone wakes screen [beta]")
     else
-        TriggersMenu.Uncheck("Microphone wakes screen")
+        TriggersMenu.Uncheck("Microphone wakes screen [beta]")
     ; Update schedule submenu
     if ScheduleEnabled
         ScheduleMenu.Check("❤️ Enable (default)")
@@ -431,11 +431,19 @@ CheckStatus() {
     
     IdleTime := A_TimeIdlePhysical
     
+    ; Track if we were showing countdown (for abort message)
+    static wasShowingCountdown := false
+    
     ; If user has recent physical activity, skip everything (no warnings, no activation)
     if (IdleTime < (InactiviteitTijd - WaarschuwingTijd)) {
-        ; User is active - clear any tooltip and reset cooldown if needed
-        if !WinExist("ahk_id " BlackScreen.Hwnd)
+        ; User is active - show abort message if we were counting down
+        if wasShowingCountdown {
+            ShowTooltipBottomRight("PowerNAP aborted - activity detected")
+            SetTimer(() => ToolTip(), -2000)
+            wasShowingCountdown := false
+        } else if !WinExist("ahk_id " BlackScreen.Hwnd) {
             ToolTip()
+        }
         return
     }
     
@@ -449,7 +457,8 @@ CheckStatus() {
             Remaining := InactiviteitTijd - TimeSinceDeactivation
             if (Remaining < WaarschuwingTijd && Remaining > 0) {
                 Resterend := Round(Remaining / 1000)
-                ShowTooltipBottomRight("PowerNAPS: Bescherming start over " Resterend "s...")
+                ShowTooltipBottomRight("PowerNAPS: Screen protection in " Resterend "s...")
+                wasShowingCountdown := true
             }
             return
         }
@@ -458,10 +467,12 @@ CheckStatus() {
     ; Warning phase: 60 seconds before nap
     if (IdleTime > (InactiviteitTijd - WaarschuwingTijd) && IdleTime < InactiviteitTijd) {
         Resterend := Round((InactiviteitTijd - IdleTime) / 1000)
-        ShowTooltipBottomRight("PowerNAPS: Bescherming start over " Resterend "s...")
+        ShowTooltipBottomRight("PowerNAPS: Screen protection in " Resterend "s...")
+        wasShowingCountdown := true
     }
     ; Activation phase: timer reached
     else if (IdleTime >= InactiviteitTijd) {
+        wasShowingCountdown := false
         ActivateBlackScreen()
     }
     ; Normal phase: clear tooltip if blackscreen not active
