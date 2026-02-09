@@ -320,22 +320,26 @@ UpdateTriggerChecks() {
 }
 
 EnableWatchdog() {
-    Run('schtasks /change /tn "PowerNAPS-Watchdog" /enable',, "Hide")
+    ; Create/recreate the watchdog task that restarts PowerNAPS at logon
+    ahkExe := "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe"
+    script := A_ScriptFullPath
+    cmd := ahkExe . ' "' . script . '"'
+    Run(A_ComSpec . ' /c schtasks /create /tn "PowerNAPS-Watchdog" /tr "' . cmd . '" /sc onlogon /rl highest /f 2>nul',, "Hide")
     ShowTooltipBottomRight("Watchdog enabled")
     SetTimer(() => ToolTip(), -2000)
-    SetTimer(UpdateWatchdogCheck, -500)
+    SetTimer(UpdateWatchdogCheck, -1000)
 }
 
 DisableWatchdog() {
-    Run('schtasks /change /tn "PowerNAPS-Watchdog" /disable',, "Hide")
+    Run(A_ComSpec . ' /c schtasks /delete /tn "PowerNAPS-Watchdog" /f 2>nul',, "Hide")
     ShowTooltipBottomRight("Watchdog disabled")
     SetTimer(() => ToolTip(), -2000)
-    SetTimer(UpdateWatchdogCheck, -500)
+    SetTimer(UpdateWatchdogCheck, -1000)
 }
 
 UpdateWatchdogCheck() {
     global WatchdogMenu
-    ; Check if watchdog task is enabled by querying Task Scheduler
+    ; Check if watchdog task exists in Task Scheduler
     try {
         result := RunWait(A_ComSpec . ' /c schtasks /query /tn "PowerNAPS-Watchdog" 2>nul | findstr /i "Ready Running"',, "Hide")
         if (result = 0) {
