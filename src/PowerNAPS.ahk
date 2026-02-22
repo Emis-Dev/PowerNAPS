@@ -365,8 +365,13 @@ BlackScreen.BackColor := "000000"
 ; ═══════════════════════════════════════════════════════════════════════════════
 ; INPUT MONITORING
 ; ═══════════════════════════════════════════════════════════════════════════════
-; Keyboard detection uses A_TimeIdlePhysical via timer (more reliable than InputHook with fullscreen GUI)
-LastIdleTime := A_TimeIdlePhysical
+; Keyboard detection uses A_TimeIdle via timer (more reliable than InputHook with fullscreen GUI)
+LastIdleTime := A_TimeIdle
+
+; Track keyboard-only activity for mouse-independent idle detection
+; When mouse wake is disabled, we use this instead of A_TimeIdlePhysical
+; (A_TimeIdlePhysical includes mouse movement which defeats the purpose)
+LastKeyboardActivity := A_TickCount
 
 ; Cooldown tracking - prevents immediate reactivation after wake (especially for remote input)
 LastDeactivationTime := 0
@@ -427,7 +432,7 @@ SetTimer(CheckStatus, 5000)
 SetTimer(CheckAutoScreenOff, 10000)  ; Check every 10 seconds for auto screen-off
 
 CheckStatus() {
-    global InactiviteitTijd, WaarschuwingTijd, BlackScreen, ScheduleEnabled, ScheduleStart, ScheduleEnd, LastDeactivationTime
+    global InactiviteitTijd, WaarschuwingTijd, BlackScreen, ScheduleEnabled, ScheduleStart, ScheduleEnd, LastDeactivationTime, MouseEnabled, LastKeyboardActivity
     
     ; Check if we're in scheduled "no nap" window
     if ScheduleEnabled && IsWithinSchedule(ScheduleStart, ScheduleEnd) {
@@ -435,12 +440,19 @@ CheckStatus() {
         return     ; Don't activate nap during scheduled hours
     }
     
-    IdleTime := A_TimeIdlePhysical
+    ; Determine idle time based on which inputs should be considered
+    ; When mouse wake is disabled, use keyboard-only tracking so mouse jitter
+    ; doesn't keep resetting the idle timer and prevent nap activation
+    if MouseEnabled {
+        IdleTime := A_TimeIdle  ; Includes both keyboard + mouse
+    } else {
+        IdleTime := A_TickCount - LastKeyboardActivity  ; Keyboard only
+    }
     
     ; Track if we were showing countdown (for abort message)
     static wasShowingCountdown := false
     
-    ; If user has recent physical activity, skip everything (no warnings, no activation)
+    ; If user has recent activity (based on tracked inputs), skip everything
     if (IdleTime < (InactiviteitTijd - WaarschuwingTijd)) {
         ; User is active - show abort message if we were counting down
         if wasShowingCountdown {
@@ -455,11 +467,22 @@ CheckStatus() {
     
     ; Cooldown check: ensure full timer duration has passed since last deactivation
     ; This prevents immediate reactivation when wake was triggered by remote input
-    ; (A_TimeIdlePhysical is not reset by remote keyboard/mouse)
+    ; (Cooldown ensures we don't immediately reactivate even if A_TimeIdle resets)
     if (LastDeactivationTime > 0) {
         TimeSinceDeactivation := A_TickCount - LastDeactivationTime
         if (TimeSinceDeactivation < InactiviteitTijd) {
-            ; Still in cooldown period but only show warning if truly idle
+            ; Still in cooldown - but if user is actively working, reset cooldown
+            ; so we don't count down in their face while they're typing
+            if (A_TimeIdle < 5000) {
+                LastDeactivationTime := A_TickCount - (InactiviteitTijd - IdleTime)
+                if wasShowingCountdown {
+                    ShowTooltipBottomRight("PowerNAP aborted - activity detected")
+                    SetTimer(() => ToolTip(), -2000)
+                    wasShowingCountdown := false
+                }
+                return
+            }
+            ; Truly idle - show warning countdown
             Remaining := InactiviteitTijd - TimeSinceDeactivation
             if (Remaining < WaarschuwingTijd && Remaining > 0) {
                 Resterend := Round(Remaining / 1000)
@@ -703,7 +726,7 @@ ActivateBlackScreen() {
         }
         ; Hide cursor by replacing all system cursors with blank cursor
         HideCursor()
-        LastIdleTime := A_TimeIdlePhysical  ; Reset tracking
+        LastIdleTime := A_TimeIdle  ; Reset tracking
         NapStartTime := A_TickCount  ; Track when nap started for auto screen-off
         ToolTip()
     }
@@ -809,7 +832,11 @@ WM_QUERYENDSESSION(*) {
 !+p::TurnMonitorOff()
 
 ; Escape: Emergency exit from blackscreen (always works)
-~Escape::DeactivateBlackScreen()
+~Escape::{
+    global LastKeyboardActivity
+    LastKeyboardActivity := A_TickCount
+    DeactivateBlackScreen()
+}
 
 ; Any key press wakes (only when blackscreen active and keyboard wake enabled)
 ~*a::OnAnyKey()
@@ -842,7 +869,8 @@ WM_QUERYENDSESSION(*) {
 ~*Tab::OnAnyKey()
 
 OnAnyKey() {
-    global BlackScreen, KeyboardEnabled
+    global BlackScreen, KeyboardEnabled, LastKeyboardActivity
+    LastKeyboardActivity := A_TickCount  ; Always track keyboard activity for idle detection
     if KeyboardEnabled && WinExist("ahk_id " BlackScreen.Hwnd)
         DeactivateBlackScreen()
 }
