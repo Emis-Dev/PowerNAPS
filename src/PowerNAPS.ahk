@@ -2,14 +2,14 @@
 #SingleInstance Force
 
 ; ╔══════════════════════════════════════════════════════════════════════════════╗
-; ║                              PowerNAPS v3.2                                 ║
+; ║                              PowerNAPS v3.3                                 ║
 ; ║           Not Another Protector of Screens - OLED Protection               ║
 ; ╚══════════════════════════════════════════════════════════════════════════════╝
 ;
 ; Makes your computer take tiny naps - increasing longevity, decreasing bills.
 ; Protects your OLED truly from burn-in with audio-safe nap technology.
 ;
-; GitHub: https://github.com/imtomcool/PowerNAPS
+; GitHub: https://github.com/Emis-Dev/PowerNAPS
 ; License: MIT
 ;
 ; Features:
@@ -71,7 +71,7 @@ if FileExist(IconPath)
 
 ; Build the tray menu
 A_TrayMenu.Delete()  ; Clear default menu
-A_TrayMenu.Add("■■■ POWERNAPS v3.2 ■■■", (*) => MsgBox("PowerNAPS v3.2`nOLED Screen Protection`n`nAlt+P = PowerNAP`nAlt+Shift+P = Screen Off", "About PowerNAPS"))
+A_TrayMenu.Add("■■■ POWERNAPS v3.3 ■■■", (*) => MsgBox("PowerNAPS v3.3`nOLED Screen Protection`n`nAlt+P = PowerNAP`nAlt+Shift+P = Screen Off", "About PowerNAPS"))
 A_TrayMenu.Add()  ; Separator
 
 ; ═══════════════════════════════════════════════════════════════════════════════

