@@ -134,6 +134,12 @@ A_TrayMenu.Add("💤 Actual Nap (Screen Off)", ActualNapMenu)
 A_TrayMenu.Add()  ; Separator
 
 ; ═══════════════════════════════════════════════════════════════════════════════
+; Fix ARC Sound (HDMI ARC EDID reset for Sonos Beam + AW3225QF)
+; ═══════════════════════════════════════════════════════════════════════════════
+A_TrayMenu.Add("🔊 Fix ARC Sound (Alt+S)", (*) => FixARCSound())
+
+
+; ═══════════════════════════════════════════════════════════════════════════════
 ; Wake Triggers submenu
 ; ═══════════════════════════════════════════════════════════════════════════════
 TriggersMenu := Menu()
@@ -831,6 +837,9 @@ WM_QUERYENDSESSION(*) {
 ; Alt + Shift + P: Turn monitor off (exits PowerNAP first)
 !+p::TurnMonitorOff()
 
+; Alt + S: Fix ARC Sound (HDMI ARC EDID reset)
+!s::FixARCSound()
+
 ; Escape: Emergency exit from blackscreen (always works)
 ~Escape::{
     global LastKeyboardActivity
@@ -959,4 +968,47 @@ UpdateDarknessCheck() {
     } else {
         try DarknessMenu.Check("70%")
     }
+}
+
+; ═══════════════════════════════════════════════════════════════════════════════
+; FIX ARC SOUND - HDMI ARC EDID reset for Sonos Beam + AW3225QF
+; ═══════════════════════════════════════════════════════════════════════════════
+; Runs Fix-SonosARC.ps1 which cycles the NVIDIA HD Audio device to force
+; EDID renegotiation, then restarts Windows Audio services.
+;
+; Fixes the audio dropout that occurs after switching audio output (e.g. headset)
+; and switching back to HDMI ARC (Sonos Beam Gen 2 via Dell AW3225QF).
+
+FixARCSound() {
+    ; Look for the PowerShell script in multiple locations
+    scriptLocations := [
+        A_ScriptDir . "\Fix-SonosARC.ps1",
+        A_ScriptDir . "\..\Fix-SonosARC.ps1",
+        A_AppData . "\PowerNAPS\Fix-SonosARC.ps1"
+    ]
+    
+    psScript := ""
+    for _, path in scriptLocations {
+        if FileExist(path) {
+            psScript := path
+            break
+        }
+    }
+    
+    if (psScript = "") {
+        MsgBox("Fix-SonosARC.ps1 not found!`n`nPlace it in one of:`n- " . A_ScriptDir . "`n- " . A_AppData . "\PowerNAPS", "Fix ARC Sound", "Icon!")
+        return
+    }
+    
+    ShowTooltipBottomRight("🔧 Fixing ARC Sound...")
+    
+    try {
+        cmd := 'powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File "' . psScript . '" -Quiet'
+        RunWait(cmd,, "Hide")
+        ShowTooltipBottomRight("✅ ARC Sound fixed!")
+    } catch as e {
+        ShowTooltipBottomRight("❌ ARC fix failed: " . e.Message)
+    }
+    
+    SetTimer(() => ToolTip(), -4000)
 }
