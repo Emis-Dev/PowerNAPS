@@ -4,37 +4,42 @@
     Fix Sonos Beam Gen 2 HDMI ARC audio dropout on Dell AW3225QF monitor.
     
 .DESCRIPTION
-    Fixes the EDID handshake failure that occurs when switching audio devices
-    (e.g., from HyperX headset back to Sonos Beam via HDMI ARC).
+    Fixes the EDID/ARC handshake failure that occurs when switching audio devices
+    (e.g., from HyperX headset back to Sonos Beam via HDMI ARC) or after
+    long idle/sleep with screen off.
     
-    The script:
-    1. Disables the NVIDIA HD Audio device (forces EDID release)
-    2. Waits for the signal to clear
-    3. Re-enables the device (forces EDID renegotiation)
-    4. Restarts Windows Audio services
-    5. Sets the HDMI/ARC output as default audio device
+    The script uses a two-pronged approach:
+    1. DDC/CI monitor input toggle (via ControlMyMonitor) to force ARC re-handshake
+    2. NVIDIA HD Audio device cycle + Windows Audio service restart
     
 .NOTES
-    Monitor: Dell AW3225QF
-    Soundbar: Sonos Beam Gen 2 (HDMI ARC)
+    Monitor: Dell AW3225QF (VCP 60 inputs: 15=HDMI2, 17=DP, 18=HDMI1/current)
+    Soundbar: Sonos Beam Gen 2 (HDMI ARC on HDMI1)
     GPU: NVIDIA (HD Audio)
     
-    Run as Administrator required for device disable/enable and service restart.
+    Requires: ControlMyMonitor.exe in %APPDATA%\PowerNAPS\tools\
+    Run as Administrator required.
 #>
 
 param(
     [switch]$Quiet,
-    [int]$DisableDelay = 3,
-    [int]$EnableDelay = 5,
+    [int]$ToggleDelay = 5,
+    [int]$DeviceDelay = 3,
     [int]$ServiceDelay = 3
 )
 
 # ═══════════════════════════════════════════════════
 # CONFIGURATION
 # ═══════════════════════════════════════════════════
+$ControlMyMonitor = "$env:APPDATA\PowerNAPS\tools\ControlMyMonitor.exe"
 $NvidiaAudioPattern = "NVIDIA High Definition Audio"
 $MonitorAudioName   = "AW3225QF*NVIDIA*"
 $HdAudioHwIdPrefix  = "HDAUDIO\FUNC_01&VEN_10DE&DEV_009E"
+
+# DDC/CI VCP Code 60 (Input Select) values for AW3225QF
+# Discovered via ControlMyMonitor: possible values = 15, 17, 18
+$OriginalInput  = 18   # Current/primary input (HDMI1 with ARC)
+$AlternateInput = 17   # Alternate input to toggle to (DP)
 
 # ═══════════════════════════════════════════════════
 # HELPER FUNCTIONS
@@ -42,28 +47,17 @@ $HdAudioHwIdPrefix  = "HDAUDIO\FUNC_01&VEN_10DE&DEV_009E"
 function Write-Status {
     param([string]$Message, [string]$Type = "Info")
     $timestamp = Get-Date -Format "HH:mm:ss"
-    $prefix = switch ($Type) {
-        "Info"    { "[i]" }
-        "OK"      { "[+]" }
-        "Warn"    { "[!]" }
-        "Error"   { "[X]" }
-        "Step"    { "[>]" }
-    }
+    $colors = @{ "Info" = "Cyan"; "OK" = "Green"; "Warn" = "Yellow"; "Error" = "Red"; "Step" = "White" }
+    $prefix = @{ "Info" = "[i]"; "OK" = "[+]"; "Warn" = "[!]"; "Error" = "[X]"; "Step" = "[>]" }
     if (-not $Quiet) {
-        Write-Host "$timestamp $prefix $Message" -ForegroundColor $(switch ($Type) {
-            "Info"  { "Cyan" }
-            "OK"    { "Green" }
-            "Warn"  { "Yellow" }
-            "Error" { "Red" }
-            "Step"  { "White" }
-        })
+        Write-Host "$timestamp $($prefix[$Type]) $Message" -ForegroundColor $colors[$Type]
     }
 }
 
 function Show-BalloonTip {
     param([string]$Title, [string]$Message, [string]$Icon = "Info")
     try {
-        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction SilentlyContinue
         $notify = New-Object System.Windows.Forms.NotifyIcon
         $notify.Icon = [System.Drawing.SystemIcons]::Information
         $notify.BalloonTipIcon = $Icon
@@ -73,84 +67,107 @@ function Show-BalloonTip {
         $notify.ShowBalloonTip(5000)
         Start-Sleep -Seconds 5
         $notify.Dispose()
-    } catch {
-        # Silently fail — not critical
-    }
+    } catch {}
 }
 
 # ═══════════════════════════════════════════════════
-# STEP 1: Find the NVIDIA HD Audio device
+# STEP 1: DDC/CI Monitor Input Toggle (forces ARC re-handshake)
 # ═══════════════════════════════════════════════════
-Write-Status "Sonos ARC Audio Fix — Starting..." "Step"
-Write-Status "Searching for NVIDIA HD Audio device..." "Info"
+Write-Status "═══ Sonos ARC Audio Fix ═══" "Step"
+
+$ddcSuccess = $false
+if (Test-Path $ControlMyMonitor) {
+    Write-Status "Toggling monitor input via DDC/CI to force ARC re-handshake..." "Step"
+    
+    # Switch to alternate input (DP)
+    Write-Status "  Switching to alternate input ($AlternateInput)..." "Info"
+    try {
+        Start-Process -FilePath $ControlMyMonitor -ArgumentList "/SetValue `"Primary`" 60 $AlternateInput" -Wait -NoNewWindow -ErrorAction Stop
+        Write-Status "  Input switched to $AlternateInput" "OK"
+    } catch {
+        Write-Status "  Failed to switch input: $_" "Warn"
+    }
+    
+    Write-Status "  Waiting ${ToggleDelay}s for ARC to release..." "Info"
+    Start-Sleep -Seconds $ToggleDelay
+    
+    # Switch back to original input (HDMI1 with ARC)
+    Write-Status "  Switching back to original input ($OriginalInput)..." "Info"
+    try {
+        Start-Process -FilePath $ControlMyMonitor -ArgumentList "/SetValue `"Primary`" 60 $OriginalInput" -Wait -NoNewWindow -ErrorAction Stop
+        Write-Status "  Input restored to $OriginalInput — ARC should re-handshake" "OK"
+        $ddcSuccess = $true
+    } catch {
+        Write-Status "  Failed to restore input: $_" "Warn"
+    }
+    
+    Write-Status "  Waiting ${ToggleDelay}s for ARC handshake..." "Info"
+    Start-Sleep -Seconds $ToggleDelay
+} else {
+    Write-Status "ControlMyMonitor not found at: $ControlMyMonitor" "Warn"
+    Write-Status "Skipping DDC/CI toggle — falling back to device cycle only" "Warn"
+    Write-Status "Download from: https://www.nirsoft.net/utils/control_my_monitor.html" "Info"
+}
+
+# ═══════════════════════════════════════════════════
+# STEP 2: Cycle NVIDIA HD Audio device (forces EDID renegotiation)
+# ═══════════════════════════════════════════════════
+Write-Status "Cycling NVIDIA HD Audio device..." "Step"
 
 $audioDevice = Get-PnpDevice -Class 'MEDIA' -Status OK | 
     Where-Object { $_.FriendlyName -like "*$NvidiaAudioPattern*" -and $_.InstanceId -like "$HdAudioHwIdPrefix*" }
 
 if (-not $audioDevice) {
-    # Fallback: try matching by name only
-    $audioDevice = Get-PnpDevice -Class 'MEDIA' | 
+    # Broader fallback
+    $audioDevice = Get-PnpDevice -Class 'MEDIA' -Status OK | 
         Where-Object { $_.FriendlyName -like "*$NvidiaAudioPattern*" }
 }
 
-if (-not $audioDevice) {
-    Write-Status "NVIDIA HD Audio device not found!" "Error"
-    Show-BalloonTip "Sonos ARC Fix" "NVIDIA HD Audio device niet gevonden." "Error"
-    exit 1
-}
-
-Write-Status "Found: $($audioDevice.FriendlyName)" "OK"
-Write-Status "  InstanceId: $($audioDevice.InstanceId)" "Info"
-
-# ═══════════════════════════════════════════════════
-# STEP 2: Disable the HD Audio device
-# ═══════════════════════════════════════════════════
-Write-Status "Disabling NVIDIA HD Audio (releasing EDID)..." "Step"
-
-try {
-    Disable-PnpDevice -InstanceId $audioDevice.InstanceId -Confirm:$false -ErrorAction Stop
-    Write-Status "Device disabled successfully" "OK"
-} catch {
-    Write-Status "Failed to disable device: $_" "Error"
-    Show-BalloonTip "Sonos ARC Fix" "Kon audio device niet uitschakelen: $_" "Error"
-    exit 1
-}
-
-Write-Status "Waiting ${DisableDelay}s for EDID signal to clear..." "Info"
-Start-Sleep -Seconds $DisableDelay
-
-# ═══════════════════════════════════════════════════
-# STEP 3: Re-enable the HD Audio device
-# ═══════════════════════════════════════════════════
-Write-Status "Re-enabling NVIDIA HD Audio (forcing EDID renegotiation)..." "Step"
-
-try {
-    Enable-PnpDevice -InstanceId $audioDevice.InstanceId -Confirm:$false -ErrorAction Stop
-    Write-Status "Device re-enabled successfully" "OK"
-} catch {
-    Write-Status "Failed to re-enable device: $_" "Error"
-    Write-Status "CRITICAL: Audio device may be stuck disabled! Trying again..." "Warn"
-    Start-Sleep -Seconds 2
+if ($audioDevice) {
+    # Handle multiple devices (pick first OK one)
+    if ($audioDevice -is [array]) { $audioDevice = $audioDevice[0] }
+    
+    Write-Status "  Found: $($audioDevice.FriendlyName) ($($audioDevice.InstanceId))" "OK"
+    
+    # Disable
+    try {
+        Disable-PnpDevice -InstanceId $audioDevice.InstanceId -Confirm:$false -ErrorAction Stop
+        Write-Status "  Device disabled" "OK"
+    } catch {
+        Write-Status "  Failed to disable: $_" "Warn"
+    }
+    
+    Start-Sleep -Seconds $DeviceDelay
+    
+    # Re-enable
     try {
         Enable-PnpDevice -InstanceId $audioDevice.InstanceId -Confirm:$false -ErrorAction Stop
-        Write-Status "Device re-enabled on retry" "OK"
+        Write-Status "  Device re-enabled" "OK"
     } catch {
-        Write-Status "FAILED to re-enable! Open Device Manager and enable manually." "Error"
-        Show-BalloonTip "Sonos ARC Fix" "KRITIEK: Audio device kon niet opnieuw ingeschakeld worden! Open Apparaatbeheer." "Error"
-        exit 1
+        Write-Status "  Failed to re-enable: $_" "Error"
+        # Critical: try again
+        Start-Sleep -Seconds 2
+        try {
+            Enable-PnpDevice -InstanceId $audioDevice.InstanceId -Confirm:$false -ErrorAction Stop
+            Write-Status "  Device re-enabled on retry" "OK"
+        } catch {
+            Write-Status "  CRITICAL: Device stuck disabled! Check Device Manager." "Error"
+            Show-BalloonTip "Sonos ARC Fix" "KRITIEK: Audio device kon niet opnieuw ingeschakeld worden!" "Error"
+            exit 1
+        }
     }
+    
+    Start-Sleep -Seconds $DeviceDelay
+} else {
+    Write-Status "  NVIDIA HD Audio device not found (may already be cycling)" "Warn"
 }
 
-Write-Status "Waiting ${EnableDelay}s for EDID handshake..." "Info"
-Start-Sleep -Seconds $EnableDelay
-
 # ═══════════════════════════════════════════════════
-# STEP 4: Restart Windows Audio services
+# STEP 3: Restart Windows Audio services
 # ═══════════════════════════════════════════════════
 Write-Status "Restarting Windows Audio services..." "Step"
 
-$services = @("AudioEndpointBuilder", "Audiosrv")
-foreach ($svc in $services) {
+foreach ($svc in @("AudioEndpointBuilder", "Audiosrv")) {
     try {
         Restart-Service -Name $svc -Force -ErrorAction Stop
         Write-Status "  $svc restarted" "OK"
@@ -159,97 +176,39 @@ foreach ($svc in $services) {
     }
 }
 
-Write-Status "Waiting ${ServiceDelay}s for audio subsystem..." "Info"
 Start-Sleep -Seconds $ServiceDelay
 
 # ═══════════════════════════════════════════════════
-# STEP 5: Verify and set default audio device
+# STEP 4: Verify endpoint is back
 # ═══════════════════════════════════════════════════
-Write-Status "Checking for AW3225QF audio endpoint..." "Step"
+Write-Status "Verifying AW3225QF audio endpoint..." "Step"
 
-# Wait for endpoint to reappear
-$maxRetries = 10
-$retryCount = 0
+$maxRetries = 15
 $endpoint = $null
-
-while ($retryCount -lt $maxRetries -and -not $endpoint) {
+for ($i = 1; $i -le $maxRetries; $i++) {
     $endpoint = Get-PnpDevice -Class 'AudioEndpoint' -Status OK | 
         Where-Object { $_.FriendlyName -like $MonitorAudioName }
-    
-    if (-not $endpoint) {
-        $retryCount++
-        Write-Status "  Endpoint not yet available, retry $retryCount/$maxRetries..." "Info"
-        Start-Sleep -Seconds 1
-    }
+    if ($endpoint) { break }
+    Write-Status "  Waiting for endpoint... ($i/$maxRetries)" "Info"
+    Start-Sleep -Seconds 1
 }
 
 if ($endpoint) {
-    Write-Status "AW3225QF audio endpoint found: $($endpoint.FriendlyName)" "OK"
-    
-    # Try to set as default using PowerShell audio cmdlet if available
-    try {
-        # Use nircmd as a fallback to set default audio device
-        # First try with the built-in Windows approach via COM
-        $code = @'
-using System;
-using System.Runtime.InteropServices;
-
-public class AudioSwitcher {
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    internal class MMDeviceEnumeratorComObject { }
-    
-    [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IMMDeviceEnumerator {
-        int NotImpl1();
-        [PreserveSig]
-        int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppDevice);
-    }
-    
-    [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IMMDevice {
-        [PreserveSig]
-        int Activate(ref Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface);
-        [PreserveSig]
-        int OpenPropertyStore(int stgmAccess, out IntPtr ppProperties);
-        [PreserveSig]
-        int GetId([MarshalAs(UnmanagedType.LPWStr)] out string ppstrId);
-    }
-    
-    public static string GetDefaultDeviceId() {
-        var enumerator = (IMMDeviceEnumerator)(new MMDeviceEnumeratorComObject());
-        IMMDevice device;
-        enumerator.GetDefaultAudioEndpoint(0, 1, out device);
-        string id;
-        device.GetId(out id);
-        return id;
-    }
-}
-'@
-        try { Add-Type -TypeDefinition $code -ErrorAction SilentlyContinue } catch {}
-        $defaultId = [AudioSwitcher]::GetDefaultDeviceId()
-        Write-Status "Current default audio: $defaultId" "Info"
-    } catch {
-        Write-Status "Could not query default audio device (non-critical)" "Warn"
-    }
-    
     Write-Status "" ""
-    Write-Status "══════════════════════════════════════════" "OK"
+    Write-Status "════════════════════════════════════════" "OK"
     Write-Status "  Sonos ARC Audio Fix COMPLETE!" "OK"
-    Write-Status "  HDMI ARC audio should be restored." "OK"
-    Write-Status "══════════════════════════════════════════" "OK"
+    if ($ddcSuccess) {
+        Write-Status "  DDC/CI input toggle + device cycle done." "OK"
+    }
+    Write-Status "  Endpoint: $($endpoint.FriendlyName)" "OK"
+    Write-Status "════════════════════════════════════════" "OK"
     Write-Status "" ""
-    Write-Status "If audio still doesn't work:" "Info"
-    Write-Status "  1. Right-click speaker icon → Sound Settings" "Info"
-    Write-Status "  2. Select 'AW3225QF (NVIDIA High Definition Audio)'" "Info"
-    Write-Status "  3. If not listed, try running this script again" "Info"
+    Write-Status "Select 'AW3225QF (NVIDIA High Definition Audio)' as output if needed." "Info"
     
-    Show-BalloonTip "Sonos ARC Fix" "HDMI ARC audio hersteld! Selecteer AW3225QF als output als dat nog niet automatisch is." "Info"
+    Show-BalloonTip "Sonos ARC Fix" "HDMI ARC audio hersteld! Selecteer AW3225QF als output." "Info"
 } else {
-    Write-Status "AW3225QF audio endpoint did not reappear after $maxRetries retries" "Warn"
-    Write-Status "The EDID renegotiation may need more time, or the monitor needs a manual input toggle." "Warn"
-    Write-Status "" ""
-    Write-Status "Try: Toggle your monitor input (e.g., switch to HDMI2 and back to DP)" "Info"
-    
-    Show-BalloonTip "Sonos ARC Fix" "Audio endpoint niet gevonden. Probeer de monitor input te wisselen (bijv. HDMI2 → DP)." "Warning"
+    Write-Status "Endpoint not found after $maxRetries retries." "Warn"
+    Write-Status "Try: Manually switch monitor input in OSD and switch back." "Info"
+    Show-BalloonTip "Sonos ARC Fix" "Audio endpoint niet gevonden. Toggle monitor input handmatig." "Warning"
     exit 2
 }
